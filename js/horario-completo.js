@@ -1,5 +1,5 @@
 // horario-completo.js - Visualização de horários com data selecionada e destaque de faltas
-// Agora com dados do Supabase
+// Agora com edição de substituição no modal
 
 // Variáveis globais
 let gradeData = {};
@@ -19,7 +19,7 @@ let dataReferencia = new Date().toISOString().split('T')[0];
 const diasSemana = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 const periodos = ['manha', 'tarde', 'noite'];
 
-// Configurações do Supabase (use as mesmas credenciais do seu projeto)
+// Configurações do Supabase
 const SUPABASE_URL = 'https://akzpntnefqyocmqswqsp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrenBudG5lZnF5b2NtcXN3cXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTgxNTMsImV4cCI6MjA5MzIzNDE1M30.TdBmACGxvuvXpTQRmLOHt9cvxWppReIZa9XSq8sDzWk';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -302,13 +302,15 @@ function getStatusAula(curso, dia, periodo, aulaNum, aula, dataAula) {
                 status: 'substituicao',
                 mensagem: `🔄 Aula com substituição\nProfessor titular: ${registro.matriculaProfessor}\nSubstituto: ${registro.substituto}\nData: ${formatarData(dataAula)}`,
                 professorOriginal: registro.matriculaProfessor,
-                professorSubstituto: registro.substituto
+                professorSubstituto: registro.substituto,
+                faltaRegistro: registro
             };
         } else {
             return {
                 status: 'ausencia',
                 mensagem: `❌ Professor ausente\nProfessor: ${registro.matriculaProfessor}\nSubstituto: NÃO DEFINIDO\nData: ${formatarData(dataAula)}\n\n⚠️ Necessário agendar substituição!`,
-                professorOriginal: registro.matriculaProfessor
+                professorOriginal: registro.matriculaProfessor,
+                faltaRegistro: registro
             };
         }
     }
@@ -380,36 +382,34 @@ function renderizarGradeCompleta() {
 
     let html = `<div class="table-responsive"><table class="table grade-table">`;
     const ths = diasSemana.map(dia => `<th>${dia}<br><small class="text-white">${datasPorDia.get(dia).displayDate}</small></th>`).join('');
-    html += `<thead><tr><th style="width: 100px">Horário</th>${ths} </thead><tbody>`;
+    html += `<thead><tr><th style="width: 100px">Horário</th>${ths} </tr></thead><tbody>`;
 
     for (const curso of cursosFiltrados) {
         const cursoId = `curso-${curso.replace(/\s/g, '-')}`;
-        // Cabeçalho clicável
         html += `<tr class="curso-separator" data-curso-id="${cursoId}">
                     <td colspan="${diasSemana.length + 1}">
                         <div class="curso-toggle" data-curso-id="${cursoId}">
                             <i class="bi bi-chevron-down toggle-icon"></i> 
                             <i class="bi bi-mortarboard"></i> ${curso}
                         </div>
-                     </td>
+                    </td>
                   </tr>`;
-        // Linhas da grade (inicialmente visíveis)
-        html += `<tr class="curso-grade-row" data-curso-id="${cursoId}">`;
-        html += `<td colspan="${diasSemana.length + 1}" style="padding: 0;">
-                    <div class="curso-grade-content" id="${cursoId}">
-                        <table class="table grade-table-inner">
-                            ${renderizarPeriodo(curso, 'manha', datasPorDia)}
-                            ${renderizarPeriodo(curso, 'tarde', datasPorDia)}
-                            ${renderizarPeriodo(curso, 'noite', datasPorDia)}
-                        </table>
-                    </div>
-                 </td>`;
-        html += `</tr>`;
+        html += `<tr class="curso-grade-row" data-curso-id="${cursoId}">
+                    <td colspan="${diasSemana.length + 1}" style="padding: 0;">
+                        <div class="curso-grade-content" id="${cursoId}">
+                            <table class="table grade-table-inner">
+                                ${renderizarPeriodo(curso, 'manha', datasPorDia)}
+                                ${renderizarPeriodo(curso, 'tarde', datasPorDia)}
+                                ${renderizarPeriodo(curso, 'noite', datasPorDia)}
+                            </table>
+                        </div>
+                    </td>
+                  </tr>`;
     }
-    html += `</tbody></table></div>`;
+    html += `</tbody></td></div>`;
     container.innerHTML = html;
 
-    // Adicionar evento para toggle (clique e toque)
+    // Adicionar evento para toggle
     document.querySelectorAll('.curso-toggle').forEach(toggle => {
         const handler = (e) => {
             e.stopPropagation();
@@ -423,7 +423,7 @@ function renderizarGradeCompleta() {
             }
         };
         toggle.addEventListener('click', handler);
-        toggle.addEventListener('touchstart', handler); // suporte mobile
+        toggle.addEventListener('touchstart', handler);
     });
 
     // Vincular clique nas células
@@ -444,7 +444,6 @@ function renderizarPeriodo(curso, periodo, datasPorDia) {
     const nome = periodo === 'manha' ? 'MANHÃ' : (periodo === 'tarde' ? 'TARDE' : 'NOITE');
     const icon = periodo === 'manha' ? '🌅' : (periodo === 'tarde' ? '🌙' : '⭐');
 
-    // Verifica se há pelo menos uma aula preenchida
     let temAulaPreenchida = false;
     let aulaNumTeste = 1;
     for (const hor of horas) {
@@ -484,7 +483,7 @@ function renderizarCelula(curso, dia, periodo, aulaNum, dataAula) {
     if (vazia) {
         return `<td class="schedule-cell empty-cell" data-curso="${curso}" data-dia="${dia}" data-periodo="${periodo}" data-aula-num="${aulaNum}" data-data-aula="${dataAula}">
                     <div class="empty-cell">➕ Clique para preencher</div>
-                </td>`;
+                  </td>`;
     }
 
     const statusInfo = getStatusAula(curso, dia, periodo, aulaNum, aula, dataAula);
@@ -512,25 +511,75 @@ function renderizarCelula(curso, dia, periodo, aulaNum, dataAula) {
             break;
         default: // normal
             statusClass = 'aula-normal';
-            // statusLabel permanece vazio (não exibe "✅ Normal")
     }
 
-    // Filtro de status
     if (currentFiltroStatus !== 'todos') {
         if (currentFiltroStatus === 'substituicao' && statusInfo.status !== 'substituicao') return '';
         if (currentFiltroStatus === 'ausencia' && statusInfo.status !== 'ausencia') return '';
         if (currentFiltroStatus === 'normal' && statusInfo.status !== 'normal') return '';
     }
 
-    const professorExibido = statusInfo.status === 'substituicao' && statusInfo.professorSubstituto
-        ? `↻ ${statusInfo.professorSubstituto}`
-        : aula.professor;
+    const professorExibido = aula.professor;
 
     return `<td class="schedule-cell ${statusClass}" data-curso="${curso}" data-dia="${dia}" data-periodo="${periodo}" data-aula-num="${aulaNum}" data-data-aula="${dataAula}" data-status="${statusInfo.status}" style="${backgroundStyle} cursor: pointer;" title="${escapeHtml(statusInfo.mensagem)}">
                 <div class="aula-disciplina"><i class="bi bi-book"></i> ${escapeHtml(aula.disciplina)}</div>
                 <div class="aula-professor"><i class="bi bi-person-badge"></i> ${escapeHtml(professorExibido)}</div>
                 ${statusLabel}
-            </td>`;
+              </td>`;
+}
+
+// ==================== FUNÇÕES DE MANIPULAÇÃO DE FALTAS ====================
+
+async function deleteFalta(matriculaProfessor, dataAula, curso, periodo, aulaNum) {
+    try {
+        const { error } = await supabaseClient
+            .from('faltas')
+            .delete()
+            .match({
+                matricula_professor: matriculaProfessor,
+                data: dataAula,
+                curso: curso,
+                periodo: periodo,
+                aula_num: aulaNum
+            });
+
+        if (error) throw error;
+
+        await carregarFaltasRegistradas();
+        renderizarGradeCompleta();
+        mostrarToast(`Falta removida com sucesso para ${formatarData(dataAula)}`, 'success');
+        return true;
+    } catch (error) {
+        console.error('Erro ao deletar falta:', error);
+        mostrarToast(`Erro ao remover falta: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+async function updateSubstituto(matriculaProfessor, dataAula, curso, periodo, aulaNum, novoSubstituto) {
+    try {
+        const { error } = await supabaseClient
+            .from('faltas')
+            .update({ substituto: novoSubstituto })
+            .match({
+                matricula_professor: matriculaProfessor,
+                data: dataAula,
+                curso: curso,
+                periodo: periodo,
+                aula_num: aulaNum
+            });
+
+        if (error) throw error;
+
+        await carregarFaltasRegistradas();
+        renderizarGradeCompleta();
+        mostrarToast(`Substituto atualizado para ${novoSubstituto || 'nenhum'}`, 'success');
+        return true;
+    } catch (error) {
+        console.error('Erro ao atualizar substituto:', error);
+        mostrarToast(`Erro ao atualizar substituto: ${error.message}`, 'error');
+        return false;
+    }
 }
 
 function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
@@ -542,7 +591,8 @@ function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
     const modal = new bootstrap.Modal(document.getElementById('detalhesAulaModal'));
     const modalBody = document.getElementById('modalBody');
     const modalHeader = document.getElementById('modalHeader');
-    if (!modalBody) return;
+    const modalFooter = document.querySelector('#detalhesAulaModal .modal-footer');
+    if (!modalBody || !modalFooter) return;
 
     let statusColor = '', statusIcon = '', statusText = '';
     switch (statusInfo.status) {
@@ -553,6 +603,7 @@ function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
     }
     modalHeader.style.background = `linear-gradient(135deg, ${statusColor}, ${statusColor}dd)`;
 
+    // Monta corpo do modal com informações básicas
     modalBody.innerHTML = `
         <div class="detalhe-info"><span class="detalhe-label"><i class="bi bi-building"></i> Turma:</span><span>${escapeHtml(curso)}</span></div>
         <div class="detalhe-info"><span class="detalhe-label"><i class="bi bi-calendar"></i> Dia:</span><span>${dia} (${formatarData(dataAula)})</span></div>
@@ -563,10 +614,92 @@ function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
         <div class="detalhe-info"><span class="detalhe-label"><i class="bi bi-chat-text"></i> Detalhes:</span><span>${statusInfo.mensagem || 'Nenhuma informação adicional'}</span></div>
     `;
 
+    // Botão "Registrar Falta" (para aulas normais)
     const btnRegistrar = document.getElementById('btnRegistrarFalta');
     if (btnRegistrar) {
-        btnRegistrar.href = `registra_faltas.html?professor=${encodeURIComponent(aula?.professor || '')}&data=${dataAula}`;
+        btnRegistrar.href = `registrar_faltas.html?professor=${encodeURIComponent(aula?.professor || '')}&data=${dataAula}`;
+        btnRegistrar.style.display = 'inline-block';
     }
+
+    // Remove botões dinâmicos anteriores
+    const existingCancelBtn = document.getElementById('btnCancelarFalta');
+    if (existingCancelBtn) existingCancelBtn.remove();
+    const existingSubstitutoGroup = document.getElementById('substitutoGroup');
+    if (existingSubstitutoGroup) existingSubstitutoGroup.remove();
+    const existingSaveSubBtn = document.getElementById('btnSalvarSubstituto');
+    if (existingSaveSubBtn) existingSaveSubBtn.remove();
+
+    const faltaRegistro = statusInfo.faltaRegistro;
+    if (faltaRegistro && (statusInfo.status === 'ausencia' || statusInfo.status === 'substituicao')) {
+        // Esconder botão Registrar Falta (já tem falta)
+        if (btnRegistrar) btnRegistrar.style.display = 'none';
+
+        // Botão Cancelar Falta
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'btnCancelarFalta';
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'btn btn-danger me-2';
+        cancelBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar Falta';
+        cancelBtn.addEventListener('click', async () => {
+            if (confirm(`Tem certeza que deseja remover a falta para a aula de ${aula?.disciplina} em ${formatarData(dataAula)}?`)) {
+                const success = await deleteFalta(
+                    faltaRegistro.matriculaProfessor,
+                    dataAula,
+                    curso,
+                    periodo,
+                    aulaNum
+                );
+                if (success) modal.hide();
+            }
+        });
+        modalFooter.prepend(cancelBtn);
+
+        // Criar grupo para seleção de substituto
+        const substitutoGroup = document.createElement('div');
+        substitutoGroup.id = 'substitutoGroup';
+        substitutoGroup.className = 'mb-3 mt-2';
+        substitutoGroup.innerHTML = `
+            <label for="selectSubstituto" class="form-label"><i class="bi bi-person-plus"></i> Professor Substituto:</label>
+            <select id="selectSubstituto" class="form-select">
+                <option value="">-- Nenhum (ausência sem substituto) --</option>
+                ${professores.map(p => `<option value="${escapeHtml(p.nome)}" ${faltaRegistro.substituto === p.nome ? 'selected' : ''}>${escapeHtml(p.nome)}</option>`).join('')}
+            </select>
+            <div class="form-text">Selecione um professor para substituir o titular.</div>
+        `;
+        // Inserir no corpo do modal, antes do footer (adicionar no final do body)
+        modalBody.appendChild(substitutoGroup);
+
+        // Botão Salvar Substituição
+        const saveSubBtn = document.createElement('button');
+        saveSubBtn.id = 'btnSalvarSubstituto';
+        saveSubBtn.type = 'button';
+        saveSubBtn.className = 'btn btn-primary';
+        saveSubBtn.innerHTML = '<i class="bi bi-save"></i> Salvar Substituição';
+        saveSubBtn.addEventListener('click', async () => {
+            const select = document.getElementById('selectSubstituto');
+            const novoSubstituto = select.value;
+            const success = await updateSubstituto(
+                faltaRegistro.matriculaProfessor,
+                dataAula,
+                curso,
+                periodo,
+                aulaNum,
+                novoSubstituto
+            );
+            if (success) {
+                // Atualiza o modal com as novas informações (opcional: recarregar o modal)
+                modal.hide();
+                // Reabrir com dados atualizados (opcional)
+                setTimeout(() => abrirModalDetalhes(curso, dia, periodo, aulaNum), 300);
+            }
+        });
+        // Inserir antes do botão Cancelar (ou no final do footer)
+        modalFooter.insertBefore(saveSubBtn, cancelBtn);
+    } else {
+        // Se não há falta, garantir que o botão Registrar Falta esteja visível (já está)
+        if (btnRegistrar) btnRegistrar.style.display = 'inline-block';
+    }
+
     modal.show();
 }
 

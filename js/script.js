@@ -135,8 +135,57 @@ async function carregarCursos() {
         .select('nome')
         .order('nome');
     
-    if (error) throw error;
-    cursos = data.map(c => c.nome);
+    if (error) {
+        console.error('Erro ao carregar cursos do Supabase:', error);
+        // Fallback para cursos padrão
+        cursos = getDefaultCursos();
+        console.warn('Usando cursos padrão:', cursos);
+        return;
+    }
+    
+    if (!data || data.length === 0) {
+        console.warn('Nenhum curso encontrado no Supabase. Usando padrão.');
+        cursos = getDefaultCursos();
+    } else {
+        cursos = data.map(c => c.nome);
+    }
+    console.log('Cursos carregados:', cursos);
+}
+
+function initFilters() {
+    const filtroCurso = document.getElementById('filtroCurso');
+    const filtroPeriodo = document.getElementById('filtroPeriodo');
+    if (!filtroCurso) {
+        console.error('Elemento filtroCurso não encontrado!');
+        return;
+    }
+    
+    // Limpa opções existentes, mantendo a primeira (Todas as Turmas)
+    filtroCurso.innerHTML = '<option value="todos">Todas as Turmas</option>';
+    
+    if (!cursos || cursos.length === 0) {
+        console.warn('Nenhum curso disponível para preencher o select.');
+        return;
+    }
+    
+    cursos.forEach(curso => {
+        const option = document.createElement('option');
+        option.value = curso;
+        option.textContent = curso;
+        filtroCurso.appendChild(option);
+    });
+    
+    console.log(`Select preenchido com ${cursos.length} cursos.`);
+    
+    // Filtro período (opcional, se existir)
+    if (filtroPeriodo) {
+        filtroPeriodo.addEventListener('change', (e) => { currentFiltroPeriodo = e.target.value; renderizarGradeCompleta(); });
+    }
+    
+    filtroCurso.addEventListener('change', (e) => { currentFiltroCurso = e.target.value; renderizarGradeCompleta(); });
+    
+    const info = document.getElementById('totalCursosInfo');
+    if (info) info.textContent = `${cursos.length} turmas`;
 }
 
 function gerarCorAleatoria(nome) {
@@ -240,24 +289,6 @@ function mostrarToast(msg, tipo = 'success') {
     }
 }
 
-function initFilters() {
-    const filtroCurso = document.getElementById('filtroCurso');
-    const filtroPeriodo = document.getElementById('filtroPeriodo');
-    if (!filtroCurso || !filtroPeriodo) return;
-    
-    cursos.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
-        filtroCurso.appendChild(opt);
-    });
-    
-    filtroCurso.addEventListener('change', (e) => { currentFiltroCurso = e.target.value; renderizarGradeCompleta(); });
-    filtroPeriodo.addEventListener('change', (e) => { currentFiltroPeriodo = e.target.value; renderizarGradeCompleta(); });
-    
-    const info = document.getElementById('totalCursosInfo');
-    if (info) info.textContent = `${cursos.length} turmas`;
-}
 
 function carregarGradeDoLocalStorage() {
     try {
