@@ -1,0 +1,135 @@
+/* reset e base */
+body {
+    background: #f0f2f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(3px);
+}
+
+/* Card de seleção */
+.card {
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Tabela */
+.table-faltas {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.table-faltas thead th {
+    background-color: #2c3e50;
+    color: white;
+    font-weight: 600;
+    border-bottom: none;
+    padding: 15px 12px;
+    vertical-align: middle;
+}
+
+.table-faltas tbody td {
+    padding: 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.table-faltas tbody tr:hover {
+    background-color: #fff3e0;
+    transition: 0.2s;
+}
+
+/* Badges e status */
+.badge-substituto {
+    background-color: #fd7e14;
+    color: white;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 20px;
+}
+
+.badge-sem-substituto {
+    background-color: #dc3545;
+    color: white;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 20px;
+}
+
+.badge-com-substituto {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Footer resumo */
+.resumo-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 1rem;
+}
+
+.resumo-card strong {
+    color: #dc3545;
+    font-size: 1.2rem;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .table-faltas {
+        font-size: 0.75rem;
+    }
+    
+    .table-faltas thead th,
+    .table-faltas tbody td {
+        padding: 8px 6px;
+    }
+    
+    .card-header h4 {
+        font-size: 1.2rem;
+    }
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Força cores sólidas na impressão/PDF */
+@media print {
+    body, .card, .table-faltas, .table-faltas td, .table-faltas th {
+        background-color: white !important;
+        color: black !important;
+        opacity: 1 !important;
+        filter: none !important;
+    }
+    
+    .badge-substituto, .badge-sem-substituto {
+        background-color: #eee !important;
+        color: black !important;
+        border: 1px solid #ccc;
+    }
+}

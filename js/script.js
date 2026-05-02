@@ -14,7 +14,7 @@ let currentFiltroPeriodo = 'todos';
 const diasSemana = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 const periodos = ['manha', 'tarde', 'noite'];
 
-// Configurações do Supabase (substitua pelos seus valores)
+// Configurações do Supabase
 const SUPABASE_URL = 'https://akzpntnefqyocmqswqsp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrenBudG5lZnF5b2NtcXN3cXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTgxNTMsImV4cCI6MjA5MzIzNDE1M30.TdBmACGxvuvXpTQRmLOHt9cvxWppReIZa9XSq8sDzWk';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -27,7 +27,6 @@ async function init() {
         initModals();
         initToast();
         initFilters();
-        //carregarGradeDoLocalStorage();
         await carregarGradeDoSupabase();
         renderizarGradeCompleta();
         renderizarLegendaCores();
@@ -96,25 +95,6 @@ async function carregarProfessores() {
     professores = data.map(p => p.nome);
 }
 
-// async function carregarProfessores() {
-//     try {
-//         const response = await fetch('../data/professores.json');
-//         if (response.ok) {
-//             const data = await response.json();
-//             if (data.professores) {
-//                 // O novo JSON contém objetos com matricula e nome.
-//                 // O sistema antigo espera apenas um array de strings (nomes).
-//                 professores = data.professores.map(p => p.nome);
-//                 return;
-//             }
-//         }
-//         throw new Error('Falha ao carregar professores');
-//     } catch (error) {
-//         console.warn('Usando professores padrão');
-//         professores = getDefaultProfessores();
-//     }
-// }
-
 async function carregarHorarios() {
     const { data, error } = await supabaseClient
         .from('horarios')
@@ -123,12 +103,10 @@ async function carregarHorarios() {
     
     if (error) throw error;
     
-    // Reinicia os arrays
     horariosManha = [];
     horariosTarde = [];
     horariosNoite = [];
     
-    // Agrupa os registros por período e monta os objetos no formato esperado pelo sistema
     for (const item of data) {
         const horarioObj = {
             inicio: item.inicio,
@@ -141,7 +119,6 @@ async function carregarHorarios() {
             horarioObj.aula = item.aula_num;
         }
         
-        // Adiciona ao array correspondente
         if (item.periodo === 'manha') {
             horariosManha.push(horarioObj);
         } else if (item.periodo === 'tarde') {
@@ -204,6 +181,24 @@ function initModals() {
     
     const confirmarBtn = document.getElementById('confirmarSalvarBtn');
     if (confirmarBtn) confirmarBtn.addEventListener('click', () => { conflitosModal?.hide(); salvarAulaForce(); });
+    
+    // Botão Limpar Horário
+    const limparBtn = document.getElementById('limparAulaBtn');
+    if (limparBtn) {
+        limparBtn.addEventListener('click', () => {
+            if (confirm('Deseja limpar este horário? A aula será removida.')) {
+                limparAula();
+            }
+        });
+    }
+    
+    // Ao fechar o modal, esconder o botão Limpar novamente
+    if (editEl) {
+        editEl.addEventListener('hidden.bs.modal', () => {
+            const limparBtn = document.getElementById('limparAulaBtn');
+            if (limparBtn) limparBtn.style.display = 'none';
+        });
+    }
     
     preencherSelectsModal();
 }
@@ -374,7 +369,6 @@ function salvarGrade() {
     }
 }
 
-// COPIE E COLE ESTA FUNÇÃO COMPLETA SUBSTITUINDO A ANTIGA
 function verificarConflitosProfessor(cursoAtual, dia, periodo, aulaNum, professor) {
     const conflitos = [];
     
@@ -382,7 +376,6 @@ function verificarConflitosProfessor(cursoAtual, dia, periodo, aulaNum, professo
     
     for (const curso of cursos) {
         for (const outroDia of diasSemana) {
-            // ⚠️ IMPORTANTE: Só verifica conflito se for o MESMO DIA
             if (outroDia !== dia) continue;
             
             for (const outroPeriodo of periodos) {
@@ -391,12 +384,10 @@ function verificarConflitosProfessor(cursoAtual, dia, periodo, aulaNum, professo
                 
                 for (const [num, aula] of Object.entries(aulas)) {
                     if (aula && aula.professor === professor && aula.disciplina && aula.disciplina !== '') {
-                        // Pular a própria aula
                         if (curso === cursoAtual && outroPeriodo === periodo && parseInt(num) === aulaNum) {
                             continue;
                         }
                         
-                        // Verificar se os horários se sobrepõem no MESMO DIA
                         if (verificarHorarioSobreposto(outroPeriodo, parseInt(num), periodo, aulaNum)) {
                             conflitos.push({
                                 curso: curso,
@@ -474,9 +465,8 @@ async function salvarAula(disciplina, professor) {
     
     const horario = gradeData[curso]?.[dia]?.[periodo]?.[aulaNum]?.horario || '';
     
-    // Objeto usando a coluna 'curso' (texto) diretamente
     const aulaData = {
-        curso: curso,               // ← agora usa a coluna curso (string)
+        curso: curso,
         dia_semana: dia,
         periodo: periodo,
         aula_num: aulaNum,
@@ -486,7 +476,6 @@ async function salvarAula(disciplina, professor) {
         updated_at: new Date().toISOString()
     };
     
-    // Upsert usando a constraint única (curso, dia_semana, periodo, aula_num)
     const { error } = await supabaseClient
         .from('grade_horaria')
         .upsert(aulaData, {
@@ -499,7 +488,6 @@ async function salvarAula(disciplina, professor) {
         return;
     }
     
-    // Atualiza cache local
     if (!gradeData[curso]) gradeData[curso] = {};
     if (!gradeData[curso][dia]) gradeData[curso][dia] = { manha: {}, tarde: {}, noite: {} };
     if (!gradeData[curso][dia][periodo]) gradeData[curso][dia][periodo] = {};
@@ -511,10 +499,49 @@ async function salvarAula(disciplina, professor) {
     mostrarToast(`Aula de ${disciplina} salva!`);
 }
 
+// NOVA FUNÇÃO: Limpa completamente o horário
+async function limparAula() {
+    if (!currentEditContext) return;
+    const { curso, dia, periodo, aulaNum } = currentEditContext;
+    const horario = gradeData[curso]?.[dia]?.[periodo]?.[aulaNum]?.horario || '';
+    
+    // Atualiza local
+    if (!gradeData[curso]) gradeData[curso] = {};
+    if (!gradeData[curso][dia]) gradeData[curso][dia] = { manha: {}, tarde: {}, noite: {} };
+    gradeData[curso][dia][periodo][aulaNum] = { disciplina: '', professor: '', horario };
+    
+    // Atualiza Supabase
+    const aulaData = {
+        curso: curso,
+        dia_semana: dia,
+        periodo: periodo,
+        aula_num: aulaNum,
+        disciplina: '',
+        professor: '',
+        horario: horario,
+        updated_at: new Date().toISOString()
+    };
+    
+    const { error } = await supabaseClient
+        .from('grade_horaria')
+        .upsert(aulaData, { onConflict: 'curso, dia_semana, periodo, aula_num' });
+    
+    if (error) {
+        console.error('Erro ao limpar horário:', error);
+        mostrarToast('Erro ao limpar horário', 'error');
+        return;
+    }
+    
+    salvarGrade();
+    renderizarGradeCompleta();
+    editModal?.hide();
+    mostrarToast('Horário limpo com sucesso!');
+}
+
 async function carregarGradeDoSupabase() {
     const { data, error } = await supabaseClient
         .from('grade_horaria')
-        .select('*');  // sem join, pois 'curso' já é texto
+        .select('*');
     
     if (error) {
         console.error('Erro ao carregar grade do Supabase:', error);
@@ -537,9 +564,6 @@ async function carregarGradeDoSupabase() {
     
     salvarGrade();
 }
-
-// Substitua a chamada em init():
-// await carregarGradeDoSupabase();  // ao invés de carregarGradeDoLocalStorage();
 
 function getDisciplinaCor(nome) {
     return disciplinasMap.get(nome)?.cor || '#ffffff';
@@ -602,7 +626,7 @@ function renderizarCelula(curso, dia, periodo, aulaNum) {
     
     return `<td class="schedule-cell ${conflito ? 'conflict' : ''}" style="background:${cor}" onclick="abrirModalEdicao('${curso}','${dia}','${periodo}',${aulaNum})">
         ${!vazia ? `<div><b>${escapeHtml(aula.disciplina)}</b></div><div><small>${escapeHtml(aula.professor)}</small>${conflito ? ' ⚠️' : ''}</div>` : '<div class="empty-cell">➕ Clique</div>'}
-    </td>`;
+     </td>`;
 }
 
 function escapeHtml(t) { if (!t) return ''; return t.replace(/[&<>]/g, function(m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]; }); }
@@ -614,6 +638,17 @@ function abrirModalEdicao(curso, dia, periodo, aulaNum) {
     const profSel = document.getElementById('professorSelect');
     if (discSel) discSel.value = aula.disciplina || '';
     if (profSel) profSel.value = aula.professor || '';
+    
+    // Mostrar botão "Limpar Horário" apenas se houver conteúdo preenchido
+    const limparBtn = document.getElementById('limparAulaBtn');
+    if (limparBtn) {
+        if (aula.disciplina || aula.professor) {
+            limparBtn.style.display = 'inline-block';
+        } else {
+            limparBtn.style.display = 'none';
+        }
+    }
+    
     editModal?.show();
 }
 

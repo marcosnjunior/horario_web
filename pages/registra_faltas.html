@@ -46,16 +46,13 @@
             <div id="stepFaltas" class="step-container" style="display: none;">
                 <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
                     <div>
-                        <h4><i class="bi bi-calendar-check"></i> Professor: <span id="professorNomeDisplay" class="badge bg-secondary fs-6"></span> <small class="text-muted ms-2">(Matrícula <span id="professorMatriculaDisplay"></span>)</small></h4>
+                        <h4><i class="bi bi-calendar-check"></i> Professor: <span id="professorNomeDisplay" class="badge bg-secondary fs-6"></span> <small class="text-muted ms-2"></small></h4>
                     </div>
                     <button id="btnResetarMatricula" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-return-left"></i> Trocar professor</button>
                 </div>
 
                 <!-- CALENDÁRIO COM DRAG -->
                 <div class="card mb-4 border-0 shadow-sm">
-                    <div class="card-header bg-light fw-semibold">
-                        <i class="bi bi-calendar-range"></i> Selecione os dias de falta (clique e arraste)
-                    </div>
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <button id="prevMonthBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-chevron-left"></i> Mês anterior</button>
@@ -64,7 +61,7 @@
                         </div>
                         <div id="calendarGrid" class="calendar-drag-grid"></div>
                         <div class="mt-2 text-muted small">
-                            <i class="bi bi-hand-index-thumb"></i> Mantenha o clique e arraste sobre as datas para selecionar um intervalo.
+                            <i class="bi bi-hand-index-thumb"></i> Selecione a data da falta.
                             <span class="badge bg-primary ms-2" id="qtdeDiasSelecionados">0 dias selecionados</span>
                         </div>
                     </div>

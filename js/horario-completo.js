@@ -510,9 +510,9 @@ function renderizarCelula(curso, dia, periodo, aulaNum, dataAula) {
             statusLabel = `<span class="aula-status status-conflito">⚡ Conflito</span>`;
             backgroundStyle = `background: repeating-linear-gradient(45deg, #f8f9fa, #f8f9fa 10px, #e9ecef 10px, #e9ecef 20px); border-left: 6px solid #6c757d;`;
             break;
-        default:
+        default: // normal
             statusClass = 'aula-normal';
-            statusLabel = `<span class="aula-status status-normal">✅ Normal</span>`;
+            // statusLabel permanece vazio (não exibe "✅ Normal")
     }
 
     // Filtro de status
@@ -565,7 +565,7 @@ function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
 
     const btnRegistrar = document.getElementById('btnRegistrarFalta');
     if (btnRegistrar) {
-        btnRegistrar.href = `faltas.html?professor=${encodeURIComponent(aula?.professor || '')}&data=${dataAula}`;
+        btnRegistrar.href = `registra_faltas.html?professor=${encodeURIComponent(aula?.professor || '')}&data=${dataAula}`;
     }
     modal.show();
 }

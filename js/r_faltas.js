@@ -497,12 +497,35 @@ function exibirListaAulas(aulas) {
 }
 
 async function registrarFaltas() {
-    await saveAbsenceRecords(); // garante persistência final
-    await exibirResumoHorario(); // recarrega o resumo baseado nos registros mais recentes
+    await saveAbsenceRecords();
+    await exibirResumoHorario();
+  
     resultadoRegistro.style.display = 'block';
     aulasContainer.style.display = 'none';
+  
+    // --- Envio do e-mail ---
+    const destinatario = 'marcosnjunior@gmail.com'; // Substitua pelo e-mail desejado
+    const professor = currentProfessor.nome;
+    const resumoHTML = resumoHorarioContainer.innerHTML; // já contém a tabela com as faltas
+  
+    const emailEnviado = await enviarEmailGoogleAppsScript(destinatario, professor, resumoHTML);
+    if (emailEnviado) {
+      // Exibe uma mensagem opcional para o usuário
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-success mt-3';
+      alertDiv.innerHTML = '<i class="bi bi-envelope-check"></i> Relatório enviado por e-mail para a coordenação.';
+      resultadoRegistro.insertAdjacentElement('afterend', alertDiv);
+      setTimeout(() => alertDiv.remove(), 5000);
+    } else {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-warning mt-3';
+      alertDiv.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Falta(s) registrada(s), mas houve problema no envio do e-mail.';
+      resultadoRegistro.insertAdjacentElement('afterend', alertDiv);
+      setTimeout(() => alertDiv.remove(), 5000);
+    }
+  
     resultadoRegistro.scrollIntoView({ behavior: 'smooth' });
-}
+  }
 
 async function exibirResumoHorario() {
     if (!currentProfessor) return;
@@ -536,6 +559,37 @@ async function exibirResumoHorario() {
     html += '</tbody></table></div>';
     resumoHorarioContainer.innerHTML = html;
 }
+
+// Função que envia os dados para o Google Apps Script
+async function enviarEmailGoogleAppsScript(destinatario, professor, resumoHTML) {
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8OxMvrwslntoA8SBB9MdHkfYcMMCwf38VzRCyXxB6HS7LptOEjfmB4gI0eWgDscqJ/exec';
+  
+    const dados = {
+      para: destinatario,
+      professor: professor,
+      resumoHTML: resumoHTML,
+      dataReferencia: new Date().toLocaleDateString('pt-BR')
+    };
+  
+    try {
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',        // Importante para evitar problemas de CORS
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dados)
+      });
+  
+      // Com 'no-cors' não conseguimos ler a resposta, mas o envio ainda acontece.
+      // Se quiser capturar erros, troque 'no-cors' por 'cors' e trate a resposta.
+      console.log('Requisição enviada ao Google Apps Script.');
+      return true;
+    } catch (error) {
+      console.error('Erro ao chamar o Google Apps Script:', error);
+      return false;
+    }
+  }
 
 // ======================== INICIAR ========================
 init();

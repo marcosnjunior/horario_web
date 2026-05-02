@@ -32,35 +32,18 @@
                     <option value="todos">Todas as Turmas</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">
-                    <i class="bi bi-funnel"></i> Filtrar Período:
-                </label>
-                <select id="filtroPeriodo" class="form-select">
-                    <option value="todos">Todos os Períodos</option>
-                    <option value="manha">Manhã</option>
-                    <option value="tarde">Tarde</option>
-                    <option value="noite">Noite</option>
-                </select>
-            </div>
             <div class="col-md-6">
                 <label class="form-label fw-bold">
                     <i class="bi bi-gear"></i> Ações:
                 </label>
                 <div class="d-flex gap-2">
-                    <button id="btnPDFCompleto" class="btn btn-danger flex-grow-1">
-                        <i class="bi bi-file-pdf"></i> Exportar PDF
-                    </button>
-                    <a href="pages/registra_faltas.html" class="btn btn-warning flex-grow-1 text-dark">
-                        <i class="bi bi-clipboard-plus"></i> Registrar Falta
+                    <a href="pages/relatorio-faltas.html" class="btn btn-danger flex-grow-1 text-dark">
+                        <i class="bi bi-clipboard-plus"></i> Relatório de Faltas
                     </a>
-                    <a href="pages/horario-completo.html" class="btn btn-success flex-grow-1 text-dark">
+                    <a href="pages/horario-completo.html" class="btn btn-warning flex-grow-1 text-dark">
                         <i class="bi bi-clipboard-plus"></i> Horário
                     </a>
                 </div>
-                <small class="text-muted mt-1 d-block">
-                    <i class="bi bi-info-circle"></i> Exporte a grade completa em PDF ou registre falta de professor
-                </small>
             </div>
         </div>
 
@@ -70,7 +53,7 @@
                 <div class="card shadow-lg">
                     <div class="card-header bg-primary text-white">
                         <h3 class="mb-0">
-                            <i class="bi bi-calendar-week"></i> Grade Horária Completa
+                            <i class="bi bi-calendar-week"></i> Grade Horária
                             <span id="totalCursosInfo" class="badge bg-light text-dark ms-2"></span>
                         </h3>
                     </div>
@@ -127,12 +110,13 @@
                             <ul class="mb-0 mt-2">
                                 <li>Cada disciplina possui uma cor única que será aplicada ao fundo da célula</li>
                                 <li>O sistema verificará automaticamente se há conflitos de horário com outros dias e turmas</li>
-                                <li>Conflitos serão exibidos com um ícone de alerta ⚠️ na grade</li>
-                                <li>Horários disponíveis: Manhã (07:00-11:20), Tarde (13:00-17:10) e Noite (18:30-21:10)</li>
                             </ul>
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" id="limparAulaBtn" style="display: none;">
+                            <i class="bi bi-trash"></i> Limpar Horário
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </button>

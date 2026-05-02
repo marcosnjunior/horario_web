@@ -14,7 +14,7 @@
         <!-- Header com data em destaque -->
         <div class="row mb-4">
             <div class="col-12 text-center">
-                <h1 class="display-4">
+                <h1 class="display-5">
                     <i class="bi bi-calendar-week"></i> Horário das Turmas
                 </h1>
                 <p class="lead">Pedras de Fogo - 2026.1</p>
@@ -68,16 +68,16 @@
             <div class="col-12">
                 <div class="legenda-container">
                     <span class="legenda-item legenda-normal">
-                        <i class="bi bi-square-fill"></i> Aula Normal
+                        <i class="bi bi-square-fill"></i> Normal
                     </span>
                     <span class="legenda-item legenda-substituicao">
-                        <i class="bi bi-square-fill"></i> Com Substituição
+                        <i class="bi bi-square-fill"></i> Substituição
                     </span>
                     <span class="legenda-item legenda-ausencia">
-                        <i class="bi bi-square-fill"></i> Professor Ausente
+                        <i class="bi bi-square-fill"></i> Ausente
                     </span>
                     <span class="legenda-item legenda-conflito">
-                        <i class="bi bi-square-fill"></i> Conflito de Horário
+                        <i class="bi bi-square-fill"></i> Conflito
                     </span>
                 </div>
             </div>
@@ -89,14 +89,17 @@
                 <div class="card shadow-lg">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap">
                         <h4 class="mb-0">
-                            <i class="bi bi-table"></i> Grade de Horários
+                            <i class="bi bi-table"></i> Horários
                         </h4>
                         <div>
                             <button id="btnAtualizar" class="btn btn-light btn-sm">
-                                <i class="bi bi-arrow-repeat"></i> Atualizar
+                                <i class="bi bi-arrow-repeat"></i>
                             </button>
                             <button id="btnExportarPDF" class="btn btn-danger btn-sm ms-2">
-                                <i class="bi bi-file-pdf"></i> Exportar PDF
+                                <i class="bi bi-file-pdf"></i>
+                            </button>
+                            <button id="btnExportarPDF" class="btn btn-warning btn-sm ms-2">
+                                <i class="bi bi-person-slash"></i> Faltar
                             </button>
                         </div>
                     </div>
@@ -128,7 +131,7 @@
                         <!-- Conteúdo dinâmico -->
                     </div>
                     <div class="modal-footer">
-                        <a href="faltas.html" class="btn btn-warning" id="btnRegistrarFalta">
+                        <a href="registra_faltas.html" class="btn btn-warning" id="btnRegistrarFalta">
                             <i class="bi bi-clipboard-plus"></i> Registrar Falta
                         </a>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
