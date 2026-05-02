@@ -1,0 +1,88 @@
+{
+  "manha": [
+    {
+      "aula": 1,
+      "inicio": "07:00",
+      "fim": "07:50"
+    },
+    {
+      "aula": 2,
+      "inicio": "07:50",
+      "fim": "08:40"
+    },
+    {
+      "intervalo": true,
+      "inicio": "08:40",
+      "fim": "08:50"
+    },
+    {
+      "aula": 3,
+      "inicio": "08:50",
+      "fim": "09:40"
+    },
+    {
+      "aula": 4,
+      "inicio": "09:40",
+      "fim": "10:30"
+    },
+    {
+      "aula": 5,
+      "inicio": "10:30",
+      "fim": "11:20"
+    }
+  ],
+  "tarde": [
+    {
+      "aula": 1,
+      "inicio": "13:00",
+      "fim": "13:50"
+    },
+    {
+      "aula": 2,
+      "inicio": "13:50",
+      "fim": "14:30"
+    },
+    {
+      "intervalo": true,
+      "inicio": "14:30",
+      "fim": "14:40"
+    },
+    {
+      "aula": 3,
+      "inicio": "14:40",
+      "fim": "15:30"
+    },
+    {
+      "aula": 4,
+      "inicio": "15:30",
+      "fim": "16:20"
+    },
+    {
+      "aula": 5,
+      "inicio": "16:20",
+      "fim": "17:10"
+    }
+  ],
+  "noite": [
+    {
+      "aula": 1,
+      "inicio": "18:30",
+      "fim": "19:20"
+    },
+    {
+      "aula": 2,
+      "inicio": "19:20",
+      "fim": "20:10"
+    },
+    {
+      "intervalo": true,
+      "inicio": "20:10",
+      "fim": "20:20"
+    },
+    {
+      "aula": 3,
+      "inicio": "20:20",
+      "fim": "21:10"
+    }
+  ]
+}

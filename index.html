@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Grade Horária - Campus</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- html2pdf Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h1 class="display-4">Horário Pedras de Fogo</h1>
+                <p class="lead">2026.1</p>
+                <hr class="bg-light">
+            </div>
+        </div>
+
+        <!-- Filtros Rápidos e Botões de Ação -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-search"></i> Filtrar Turmas:
+                </label>
+                <select id="filtroCurso" class="form-select">
+                    <option value="todos">Todas as Turmas</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-funnel"></i> Filtrar Período:
+                </label>
+                <select id="filtroPeriodo" class="form-select">
+                    <option value="todos">Todos os Períodos</option>
+                    <option value="manha">Manhã</option>
+                    <option value="tarde">Tarde</option>
+                    <option value="noite">Noite</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-gear"></i> Ações:
+                </label>
+                <div class="d-flex gap-2">
+                    <button id="btnPDFCompleto" class="btn btn-danger flex-grow-1">
+                        <i class="bi bi-file-pdf"></i> Exportar PDF
+                    </button>
+                    <a href="pages/registra_faltas.html" class="btn btn-warning flex-grow-1 text-dark">
+                        <i class="bi bi-clipboard-plus"></i> Registrar Falta
+                    </a>
+                    <a href="pages/horario-completo.html" class="btn btn-success flex-grow-1 text-dark">
+                        <i class="bi bi-clipboard-plus"></i> Horário
+                    </a>
+                </div>
+                <small class="text-muted mt-1 d-block">
+                    <i class="bi bi-info-circle"></i> Exporte a grade completa em PDF ou registre falta de professor
+                </small>
+            </div>
+        </div>
+
+        <!-- Grade Horária Completa -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="bi bi-calendar-week"></i> Grade Horária Completa
+                            <span id="totalCursosInfo" class="badge bg-light text-dark ms-2"></span>
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="gradeContainer" class="table-responsive">
+                            <div class="text-center p-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="mt-3">Carregando dados dos turmas...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Edição -->
+        <div class="modal fade" id="editModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-pencil-square"></i> Editar Aula
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-book"></i> Disciplina:
+                                    </label>
+                                    <select id="disciplinaSelect" class="form-select">
+                                        <option value="">Selecione uma disciplina...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-person-badge"></i> Professor(a):
+                                    </label>
+                                    <select id="professorSelect" class="form-select">
+                                        <option value="">Selecione um professor...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <strong>Informações:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Cada disciplina possui uma cor única que será aplicada ao fundo da célula</li>
+                                <li>O sistema verificará automaticamente se há conflitos de horário com outros dias e turmas</li>
+                                <li>Conflitos serão exibidos com um ícone de alerta ⚠️ na grade</li>
+                                <li>Horários disponíveis: Manhã (07:00-11:20), Tarde (13:00-17:10) e Noite (18:30-21:10)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn btn-primary" id="salvarAulaBtn">
+                            <i class="bi bi-check-circle"></i> Salvar Aula
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Conflitos -->
+        <div class="modal fade" id="conflitosModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Conflitos de Horário Detectados
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="conflitosList">
+                        <!-- Conflitos serão listados aqui -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-warning" id="confirmarSalvarBtn">Salvar mesmo assim</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast de Notificação -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+            <div id="notificationToast" class="toast" role="alert">
+                <div class="toast-header">
+                    <i class="bi bi-bell-fill me-2"></i>
+                    <strong class="me-auto">Notificação</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/pdfGenerator.js"></script>
+    <script>
+        // Configurar botão de PDF
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnPDFCompleto = document.getElementById('btnPDFCompleto');
+            
+            if (btnPDFCompleto) {
+                btnPDFCompleto.addEventListener('click', function() {
+                    if (typeof gerarPDFGrade === 'function') {
+                        gerarPDFGrade();
+                    } else {
+                        console.error('Função gerarPDFGrade não encontrada');
+                        alert('Erro ao gerar PDF. Verifique se o arquivo pdfGenerator.js foi carregado.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

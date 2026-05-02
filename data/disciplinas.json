@@ -1,0 +1,79 @@
+{
+  "disciplinas_ensino_medio": [
+    {
+      "nome": "Língua Portuguesa",
+      "cor": "#FFE4E1",
+      "corClara": "#FFF5F3"
+    },
+    {
+      "nome": "Matemática",
+      "cor": "#E0F7FA",
+      "corClara": "#F0FDFF"
+    },
+    {
+      "nome": "Biologia",
+      "cor": "#E8F5E9",
+      "corClara": "#F1F8F2"
+    },
+    {
+      "nome": "Física",
+      "cor": "#E3F2FD",
+      "corClara": "#F0F7FF"
+    },
+    {
+      "nome": "Química",
+      "cor": "#FFF3E0",
+      "corClara": "#FFF8F0"
+    },
+    {
+      "nome": "História",
+      "cor": "#FCE4EC",
+      "corClara": "#FFF5F7"
+    },
+    {
+      "nome": "Geografia",
+      "cor": "#F1F8E9",
+      "corClara": "#F9FCF5"
+    },
+    {
+      "nome": "Filosofia",
+      "cor": "#E8EAF6",
+      "corClara": "#F3F4FC"
+    },
+    {
+      "nome": "Sociologia",
+      "cor": "#F3E5F5",
+      "corClara": "#FBF5FD"
+    },
+    {
+      "nome": "Arte",
+      "cor": "#FFEBEE",
+      "corClara": "#FFF8F8"
+    },
+    {
+      "nome": "Educação Física",
+      "cor": "#E0F2F1",
+      "corClara": "#F0F9F8"
+    },
+    {
+      "nome": "Língua Inglesa",
+      "cor": "#FFF9C4",
+      "corClara": "#FFFDF0"
+    },
+    {
+      "nome": "Projeto de Vida",
+      "cor": "#D1C4E9",
+      "corClara": "#EEE8FC"
+    },
+    {
+      "nome": "Ensino Religioso",
+      "cor": "#C8E6C9",
+      "corClara": "#EEF9EE"
+    },
+    {
+      "nome": "Espanhol",
+      "cor": "#FFCCBC",
+      "corClara": "#FFF3EF"
+    }
+  ]
+}

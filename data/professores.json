@@ -1,0 +1,64 @@
+{
+  "professores": [
+    {
+      "matricula": "1001",
+      "nome": "Prof. Leonardo"
+    },
+    {
+      "matricula": "1002",
+      "nome": "Profª. Maria Oliveira"
+    },
+    {
+      "matricula": "1003",
+      "nome": "Prof. Pedro Henrique"
+    },
+    {
+      "matricula": "1004",
+      "nome": "Profª. Ana Beatriz"
+    },
+    {
+      "matricula": "1005",
+      "nome": "Prof. Lucas Santos"
+    },
+    {
+      "matricula": "1006",
+      "nome": "Profª. Juliana Costa"
+    },
+    {
+      "matricula": "1007",
+      "nome": "Prof. Rafael Almeida"
+    },
+    {
+      "matricula": "1008",
+      "nome": "Profª. Camila Rodrigues"
+    },
+    {
+      "matricula": "1009",
+      "nome": "Prof. Bruno Lima"
+    },
+    {
+      "matricula": "1010",
+      "nome": "Profª. Fernanda Castro"
+    },
+    {
+      "matricula": "1011",
+      "nome": "Prof. Diego Mendes"
+    },
+    {
+      "matricula": "1012",
+      "nome": "Profª. Patrícia Gomes"
+    },
+    {
+      "matricula": "1013",
+      "nome": "Prof. Vinícius Araújo"
+    },
+    {
+      "matricula": "1014",
+      "nome": "Profª. Natália Rocha"
+    },
+    {
+      "matricula": "1015",
+      "nome": "Prof. Gustavo Pereira"
+    }
+  ]
+}

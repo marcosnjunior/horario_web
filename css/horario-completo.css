@@ -1,0 +1,387 @@
+/* horario-completo.css - Estilos para página de visualização de horário */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #f0f2f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Banner de informações */
+.alert-info-banner {
+    background-color: #e3f2fd;
+    padding: 8px 16px;
+    border-radius: 30px;
+    display: inline-block;
+    font-size: 0.9rem;
+}
+
+.alert-info-banner i {
+    color: #0d6efd;
+}
+
+/* Badges */
+.badge-substituicao {
+    background-color: #fd7e14;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.badge-ausencia {
+    background-color: #dc3545;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+/* Legenda */
+.legenda-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 10px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.legenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.legenda-item i {
+    font-size: 0.9rem;
+}
+
+.legenda-normal i {
+    color: #28a745;
+}
+
+.legenda-substituicao i {
+    color: #fd7e14;
+}
+
+.legenda-ausencia i {
+    color: #dc3545;
+}
+
+.legenda-conflito i {
+    color: #6c757d;
+}
+
+/* Tabela de Grade */
+.grade-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.grade-table th,
+.grade-table td {
+    border: 1px solid #dee2e6;
+    padding: 10px 8px;
+    vertical-align: top;
+    transition: all 0.2s ease;
+}
+
+.grade-table th {
+    background-color: #343a40;
+    color: white;
+    font-weight: 600;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Linha separadora de curso */
+.curso-separator {
+    background-color: #e9ecef;
+}
+
+.curso-separator td {
+    padding: 8px 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #0d6efd;
+    border-bottom: 2px solid #0d6efd;
+}
+
+/* Linha separadora de período */
+.periodo-separator {
+    background-color: #f8f9fa;
+}
+
+.periodo-separator td {
+    padding: 6px 12px;
+    font-weight: bold;
+    color: #6c757d;
+    font-size: 0.85rem;
+    border-top: 2px solid #dee2e6;
+}
+
+/* Célula de intervalo */
+.intervalo-cell {
+    background-color: #fff3cd;
+}
+
+.intervalo-cell td {
+    background-color: #fff3cd;
+    text-align: center;
+    color: #856404;
+}
+
+/* Células de aula */
+.schedule-cell {
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    min-width: 140px;
+}
+
+.schedule-cell:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 5;
+    position: relative;
+}
+
+/* Estilos de status das aulas */
+.aula-normal {
+    border-left: 4px solid #28a745;
+    background-color: #f8fff8;
+}
+
+.aula-substituicao {
+    border-left: 4px solid #fd7e14;
+    background: linear-gradient(135deg, #fff8f0 0%, #fff0e0 100%);
+    position: relative;
+}
+
+.aula-substituicao::after {
+    content: "🔄";
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+.aula-ausencia {
+    border-left: 4px solid #dc3545;
+    background: linear-gradient(135deg, #fff0f0 0%, #ffe0e0 100%);
+    position: relative;
+}
+
+.aula-ausencia::after {
+    content: "⚠️";
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+.aula-conflito {
+    border-left: 4px solid #6c757d;
+    background: repeating-linear-gradient(
+        45deg,
+        #f8f9fa,
+        #f8f9fa 10px,
+        #e9ecef 10px,
+        #e9ecef 20px
+    );
+}
+
+/* Informações da aula */
+.aula-disciplina {
+    font-weight: bold;
+    font-size: 0.9rem;
+    word-break: break-word;
+}
+
+.aula-professor {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 4px;
+    word-break: break-word;
+}
+
+.aula-status {
+    margin-top: 6px;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+.status-substituto {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.status-ausente {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-normal {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Célula vazia */
+.empty-cell {
+    color: #adb5bd;
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 8px;
+}
+
+/* Tooltip customizado */
+.aula-tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 250px;
+    white-space: normal;
+    word-break: break-word;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Modal */
+.modal-content {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.detalhe-info {
+    margin-bottom: 12px;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.detalhe-label {
+    font-weight: bold;
+    color: #0d6efd;
+    width: 100px;
+    display: inline-block;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .grade-table {
+        font-size: 0.7rem;
+    }
+    
+    .grade-table th,
+    .grade-table td {
+        padding: 6px 4px;
+    }
+    
+    .schedule-cell {
+        min-width: 100px;
+    }
+    
+    .aula-disciplina {
+        font-size: 0.75rem;
+    }
+    
+    .aula-professor {
+        font-size: 0.65rem;
+    }
+    
+    .legenda-container {
+        gap: 8px;
+    }
+    
+    .legenda-item {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+    }
+    
+    .alert-info-banner {
+        font-size: 0.75rem;
+    }
+}
+
+@media print {
+    body {
+        background-color: white;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .schedule-cell:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .btn, .toast-container, .legenda-container, 
+    .alert-info-banner, .modal, #btnExportarPDF, #btnAtualizar,
+    .filtro-row, .card-header button {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6;
+    }
+    
+    .grade-table th {
+        background-color: #343a40 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .aula-substituicao,
+    .aula-ausencia,
+    .aula-normal {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* Scroll suave */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Loading spinner */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Filtros responsivos */
+@media (max-width: 768px) {
+    .row.g-3 {
+        gap: 0.5rem;
+    }
+}

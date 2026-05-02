@@ -1,0 +1,99 @@
+/* Estilos específicos para o sistema de faltas */
+.bg-gradient-soft {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+
+.step-container {
+    transition: all 0.3s ease;
+}
+
+.calendar-drag-grid {
+    user-select: none;
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.calendar-table th,
+.calendar-table td {
+    border: 1px solid #dee2e6;
+    padding: 12px 8px;
+    text-align: center;
+    vertical-align: middle;
+    transition: 0.1s linear;
+}
+
+.calendar-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.calendar-cell {
+    cursor: pointer;
+    font-weight: 500;
+    background-color: #fff;
+}
+
+.calendar-cell.selected {
+    background-color: #0d6efd !important;
+    color: white !important;
+    box-shadow: inset 0 0 0 2px #0a58ca;
+}
+
+.calendar-cell.empty {
+    background-color: #f1f3f5;
+    cursor: default;
+}
+
+.calendar-cell:not(.empty):hover {
+    background-color: #e9ecef;
+    transform: scale(0.98);
+}
+
+/* Responsividade do calendário */
+@media (max-width: 768px) {
+    .calendar-table th,
+    .calendar-table td {
+        padding: 8px 4px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Cards de aulas */
+.card.shadow-sm {
+    transition: 0.2s;
+}
+.card.shadow-sm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1) !important;
+}
+
+/* Botões */
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    border: none;
+}
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13,110,253,0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754, #157347);
+}
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545, #bb2d3b);
+}
+
+/* Ajustes finos */
+select.form-select {
+    cursor: pointer;
+}
