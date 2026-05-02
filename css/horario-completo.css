@@ -409,3 +409,53 @@ html {
 .curso-grade-body {
     transition: display 0.2s;
 }
+
+/* Cursos colapsáveis - suporte mobile */
+.curso-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: #0d6efd;
+    user-select: none;
+    padding: 8px 0;
+    touch-action: manipulation; /* melhora resposta ao toque */
+}
+
+.curso-toggle:hover {
+    opacity: 0.8;
+}
+
+.curso-toggle .toggle-icon {
+    font-size: 1.2rem;
+    transition: transform 0.2s;
+}
+
+.curso-grade-content {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.grade-table-inner {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.grade-table-inner td, 
+.grade-table-inner th {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+}
+
+/* Garantir que a tabela interna respeite o tamanho */
+@media (max-width: 768px) {
+    .grade-table-inner {
+        font-size: 0.7rem;
+    }
+    .curso-toggle {
+        font-size: 0.9rem;
+        padding: 12px 0; /* área de toque maior */
+    }
+}

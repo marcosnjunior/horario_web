@@ -380,47 +380,53 @@ function renderizarGradeCompleta() {
 
     let html = `<div class="table-responsive"><table class="table grade-table">`;
     const ths = diasSemana.map(dia => `<th>${dia}<br><small class="text-white">${datasPorDia.get(dia).displayDate}</small></th>`).join('');
-    html += `<thead><tr><th style="width: 100px">Horário</th>${ths}</tr></thead><tbody>`;
+    html += `<thead><tr><th style="width: 100px">Horário</th>${ths} </thead><tbody>`;
 
     for (const curso of cursosFiltrados) {
         const cursoId = `curso-${curso.replace(/\s/g, '-')}`;
         // Cabeçalho clicável
-        html += `<tr class="curso-separator" data-curso="${cursoId}">
+        html += `<tr class="curso-separator" data-curso-id="${cursoId}">
                     <td colspan="${diasSemana.length + 1}">
                         <div class="curso-toggle" data-curso-id="${cursoId}">
                             <i class="bi bi-chevron-down toggle-icon"></i> 
                             <i class="bi bi-mortarboard"></i> ${curso}
                         </div>
-                    </td>
-                 </tr>`;
-        // Corpo da grade (colapsável)
-        html += `<tbody id="${cursoId}" class="curso-grade-body" style="display: none;">`;
-        if (currentFiltroPeriodo === 'todos' || currentFiltroPeriodo === 'manha') html += renderizarPeriodo(curso, 'manha', datasPorDia);
-        if (currentFiltroPeriodo === 'todos' || currentFiltroPeriodo === 'tarde') html += renderizarPeriodo(curso, 'tarde', datasPorDia);
-        if (currentFiltroPeriodo === 'todos' || currentFiltroPeriodo === 'noite') html += renderizarPeriodo(curso, 'noite', datasPorDia);
-        html += `</tbody>`;
+                     </td>
+                  </tr>`;
+        // Linhas da grade (inicialmente visíveis)
+        html += `<tr class="curso-grade-row" data-curso-id="${cursoId}">`;
+        html += `<td colspan="${diasSemana.length + 1}" style="padding: 0;">
+                    <div class="curso-grade-content" id="${cursoId}">
+                        <table class="table grade-table-inner">
+                            ${renderizarPeriodo(curso, 'manha', datasPorDia)}
+                            ${renderizarPeriodo(curso, 'tarde', datasPorDia)}
+                            ${renderizarPeriodo(curso, 'noite', datasPorDia)}
+                        </table>
+                    </div>
+                 </td>`;
+        html += `</tr>`;
     }
     html += `</tbody></table></div>`;
     container.innerHTML = html;
 
-    // Adicionar evento de toggle para cada curso
+    // Adicionar evento para toggle (clique e toque)
     document.querySelectorAll('.curso-toggle').forEach(toggle => {
-        toggle.addEventListener('click', (e) => {
+        const handler = (e) => {
             e.stopPropagation();
             const cursoId = toggle.dataset.cursoId;
-            const body = document.getElementById(cursoId);
-            if (body) {
-                const isVisible = body.style.display !== 'none';
-                body.style.display = isVisible ? 'none' : '';
-                const icon = toggle.querySelector('.toggle-icon');
-                if (icon) {
-                    icon.className = isVisible ? 'bi bi-chevron-right toggle-icon' : 'bi bi-chevron-down toggle-icon';
-                }
+            const content = document.getElementById(cursoId);
+            const icon = toggle.querySelector('.toggle-icon');
+            if (content) {
+                const isHidden = content.style.display === 'none';
+                content.style.display = isHidden ? '' : 'none';
+                icon.className = isHidden ? 'bi bi-chevron-down toggle-icon' : 'bi bi-chevron-right toggle-icon';
             }
-        });
+        };
+        toggle.addEventListener('click', handler);
+        toggle.addEventListener('touchstart', handler); // suporte mobile
     });
 
-    // Vincular evento de clique nas células (já existia)
+    // Vincular clique nas células
     document.querySelectorAll('.schedule-cell').forEach(cell => {
         cell.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -438,34 +444,36 @@ function renderizarPeriodo(curso, periodo, datasPorDia) {
     const nome = periodo === 'manha' ? 'MANHÃ' : (periodo === 'tarde' ? 'TARDE' : 'NOITE');
     const icon = periodo === 'manha' ? '🌅' : (periodo === 'tarde' ? '🌙' : '⭐');
 
+    // Verifica se há pelo menos uma aula preenchida
     let temAulaPreenchida = false;
-    let aulaNum = 1;
+    let aulaNumTeste = 1;
     for (const hor of horas) {
         if (!hor.intervalo) {
             for (const dia of diasSemana) {
-                const aula = gradeData[curso]?.[dia]?.[periodo]?.[aulaNum];
+                const aula = gradeData[curso]?.[dia]?.[periodo]?.[aulaNumTeste];
                 if (aula && aula.disciplina) { temAulaPreenchida = true; break; }
             }
             if (temAulaPreenchida) break;
-            aulaNum++;
+            aulaNumTeste++;
         }
     }
     if (!temAulaPreenchida) return '';
 
-    aulaNum = 1;
-    let html = `<tr class="periodo-separator"><td colspan="${diasSemana.length + 1}">${icon} PERÍODO DA ${nome} </tr>`;
+    let html = `<tbody class="periodo-body"><tr class="periodo-separator"><td colspan="${diasSemana.length + 1}">${icon} PERÍODO DA ${nome}</td></tr>`;
+    let aulaNum = 1;
     for (const hor of horas) {
         if (hor.intervalo) {
-            html += `<tr class="intervalo-cell"><td>⏸️ INTERVALO<br><small>${hor.inicio} - ${hor.fim}</small></td>${diasSemana.map(() => '<td class="text-center">☕</td>').join('')} </tr>`;
+            html += `<tr class="intervalo-cell"><td colspan="${diasSemana.length + 1}">⏸️ INTERVALO<br><small>${hor.inicio} - ${hor.fim}</small></td></tr>`;
         } else {
             const linhaCells = diasSemana.map(dia => {
                 const dataAula = datasPorDia.get(dia).fullDate;
                 return renderizarCelula(curso, dia, periodo, aulaNum, dataAula);
             });
-            html += `<tr><td class="fw-bold">${hor.inicio}<br><small>${hor.fim}</small></td>${linhaCells.join('')} </tr>`;
+            html += `<tr><td class="fw-bold">${hor.inicio}<br><small>${hor.fim}</small></td>${linhaCells.join('')}</tr>`;
             aulaNum++;
         }
     }
+    html += `</tbody>`;
     return html;
 }
 
