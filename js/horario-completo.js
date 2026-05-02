@@ -1,5 +1,5 @@
 // horario-completo.js - Visualização de horários com data selecionada e destaque de faltas
-// SEM VALORES PADRÃO - Exibe erro fatal se os dados não puderem ser carregados
+// Agora com dados do Supabase
 
 // Variáveis globais
 let gradeData = {};
@@ -19,6 +19,11 @@ let dataReferencia = new Date().toISOString().split('T')[0];
 const diasSemana = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 const periodos = ['manha', 'tarde', 'noite'];
 
+// Configurações do Supabase (use as mesmas credenciais do seu projeto)
+const SUPABASE_URL = 'https://akzpntnefqyocmqswqsp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrenBudG5lZnF5b2NtcXN3cXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTgxNTMsImV4cCI6MjA5MzIzNDE1M30.TdBmACGxvuvXpTQRmLOHt9cvxWppReIZa9XSq8sDzWk';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -27,13 +32,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         initToast();
         initFiltros();
         carregarFiltrosUI();
-        await carregarFaltasRegistradas();
         atualizarDataNoTitulo();
         renderizarGradeCompleta();
         mostrarLoading(false);
     } catch (error) {
         console.error('Erro fatal na inicialização:', error);
-        mostrarErroFatal(error.message || 'Falha ao carregar dados essenciais. Verifique os arquivos JSON e localStorage.', error);
+        mostrarErroFatal(error.message || 'Falha ao carregar dados essenciais do Supabase.', error);
         mostrarLoading(false);
     }
 });
@@ -51,8 +55,7 @@ function mostrarErroFatal(mensagem, erro) {
             </div>
         `;
     }
-    // Desabilitar botões que dependem dos dados
-    const btns = document.querySelectorAll('#btnAtualizar, #btnExportarPDF, #btnRegistrarFalta');
+    const btns = document.querySelectorAll('#btnAtualizar, #btnExportarPDF');
     btns.forEach(btn => btn.disabled = true);
 }
 
@@ -70,85 +73,112 @@ function mostrarLoading(show) {
     }
 }
 
-// Carregar todos os dados - SEM FALLBACK
+// Carregar todos os dados do Supabase
 async function carregarTodosOsDados() {
-    await carregarGradeLocalStorage();
-    await carregarCursos();
-    await carregarProfessoresDisciplinas();
-    await carregarHorarios();
+    await Promise.all([
+        carregarGradeHoraria(),
+        carregarCursos(),
+        carregarProfessores(),
+        carregarDisciplinas(),
+        carregarHorarios(),
+        carregarFaltasRegistradas()
+    ]);
 }
 
-function carregarGradeLocalStorage() {
-    const saved = localStorage.getItem('gradeHoraria');
-    if (!saved) {
-        throw new Error('Nenhum dado de grade encontrado no localStorage. Cadastre horários primeiro.');
-    }
-    try {
-        gradeData = JSON.parse(saved);
-        if (Object.keys(gradeData).length === 0) {
-            throw new Error('Grade vazia no localStorage.');
-        }
-    } catch (e) {
-        throw new Error(`Erro ao fazer parse da grade: ${e.message}`);
+async function carregarGradeHoraria() {
+    const { data, error } = await supabaseClient
+        .from('grade_horaria')
+        .select('*');
+    if (error) throw new Error(`Erro ao carregar grade: ${error.message}`);
+    if (!data || data.length === 0) throw new Error('Nenhum registro de grade encontrado no Supabase.');
+
+    gradeData = {};
+    for (const item of data) {
+        const { curso, dia_semana, periodo, aula_num, disciplina, professor, horario } = item;
+        if (!gradeData[curso]) gradeData[curso] = {};
+        if (!gradeData[curso][dia_semana]) gradeData[curso][dia_semana] = { manha: {}, tarde: {}, noite: {} };
+        if (!gradeData[curso][dia_semana][periodo]) gradeData[curso][dia_semana][periodo] = {};
+        gradeData[curso][dia_semana][periodo][aula_num] = { disciplina, professor, horario };
     }
 }
 
 async function carregarCursos() {
-    const resp = await fetch('../data/cursos.json');
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} ao carregar cursos.json`);
-    const data = await resp.json();
-    if (!data.cursos || !Array.isArray(data.cursos) || data.cursos.length === 0) {
-        throw new Error('cursos.json não contém a lista "cursos" ou está vazia');
-    }
-    cursos = data.cursos;
+    const { data, error } = await supabaseClient
+        .from('cursos')
+        .select('nome')
+        .order('nome');
+    if (error) throw new Error(`Erro ao carregar cursos: ${error.message}`);
+    if (!data || data.length === 0) throw new Error('Nenhum curso encontrado.');
+    cursos = data.map(c => c.nome);
 }
 
-async function carregarProfessoresDisciplinas() {
-    // Professores
-    const respProf = await fetch('../data/professores.json');
-    if (!respProf.ok) throw new Error(`HTTP ${respProf.status} ao carregar professores.json`);
-    const dataProf = await respProf.json();
-    if (!dataProf.professores || !Array.isArray(dataProf.professores) || dataProf.professores.length === 0) {
-        throw new Error('professores.json não contém a lista "professores" ou está vazia');
-    }
-    professores = dataProf.professores;
+async function carregarProfessores() {
+    const { data, error } = await supabaseClient
+        .from('professores')
+        .select('matricula, nome')
+        .order('nome');
+    if (error) throw new Error(`Erro ao carregar professores: ${error.message}`);
+    if (!data || data.length === 0) throw new Error('Nenhum professor encontrado.');
+    professores = data;
+}
 
-    // Disciplinas
-    const respDisc = await fetch('../data/disciplinas.json');
-    if (!respDisc.ok) throw new Error(`HTTP ${respDisc.status} ao carregar disciplinas.json`);
-    const dataDisc = await respDisc.json();
-    if (!dataDisc.disciplinas_ensino_medio || !Array.isArray(dataDisc.disciplinas_ensino_medio) || dataDisc.disciplinas_ensino_medio.length === 0) {
-        throw new Error('disciplinas.json não contém "disciplinas_ensino_medio" ou está vazia');
-    }
-    dataDisc.disciplinas_ensino_medio.forEach(d => {
-        if (!d.nome) throw new Error('Disciplina sem nome em disciplinas.json');
-        disciplinasMap.set(d.nome, d);
+async function carregarDisciplinas() {
+    const { data, error } = await supabaseClient
+        .from('disciplinas')
+        .select('nome, cor, cor_clara')
+        .order('nome');
+    if (error) throw new Error(`Erro ao carregar disciplinas: ${error.message}`);
+    if (!data || data.length === 0) throw new Error('Nenhuma disciplina encontrada.');
+    disciplinasMap.clear();
+    data.forEach(d => {
+        disciplinasMap.set(d.nome, { nome: d.nome, cor: d.cor, corClara: d.cor_clara || '#f5f5f5' });
     });
 }
 
 async function carregarHorarios() {
-    const resp = await fetch('../data/horarios.json');
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} ao carregar horarios.json`);
-    const data = await resp.json();
-    if (!data.manha || !data.tarde || !data.noite) {
-        throw new Error('horarios.json deve conter "manha", "tarde" e "noite"');
+    const { data, error } = await supabaseClient
+        .from('horarios')
+        .select('*')
+        .order('ordem');
+    if (error) throw new Error(`Erro ao carregar horários: ${error.message}`);
+    if (!data || data.length === 0) throw new Error('Nenhum horário encontrado.');
+
+    horariosManha = [];
+    horariosTarde = [];
+    horariosNoite = [];
+
+    for (const item of data) {
+        const horarioObj = {
+            inicio: item.inicio,
+            fim: item.fim
+        };
+        if (item.is_intervalo) {
+            horarioObj.intervalo = true;
+        } else {
+            horarioObj.aula = item.aula_num;
+        }
+        if (item.periodo === 'manha') horariosManha.push(horarioObj);
+        else if (item.periodo === 'tarde') horariosTarde.push(horarioObj);
+        else if (item.periodo === 'noite') horariosNoite.push(horarioObj);
     }
-    horariosManha = data.manha;
-    horariosTarde = data.tarde;
-    horariosNoite = data.noite;
 }
 
 async function carregarFaltasRegistradas() {
-    const saved = localStorage.getItem('faltasRegistradas');
-    if (saved) {
-        try {
-            faltasRegistradas = JSON.parse(saved);
-        } catch (e) {
-            faltasRegistradas = [];
-            console.warn('Erro ao parse faltasRegistradas, continuando sem faltas');
-        }
-    } else {
+    const { data, error } = await supabaseClient
+        .from('faltas')
+        .select('*');
+    if (error) {
+        console.warn('Erro ao carregar faltas, continuando sem:', error);
         faltasRegistradas = [];
+    } else {
+        faltasRegistradas = data.map(f => ({
+            matriculaProfessor: f.matricula_professor,
+            data: f.data,
+            curso: f.curso,
+            periodo: f.periodo,
+            aulaNum: f.aula_num,
+            substituto: f.substituto || ''
+        }));
     }
 }
 
@@ -160,7 +190,7 @@ function atualizarDataNoTitulo() {
         dataBadge.textContent = 'Hoje';
         dataBadge.classList.add('bg-success');
     } else if (dataBadge) {
-        dataBadge.textContent = '';
+        dataBadge.innerHTML = '';
     }
 }
 
@@ -225,6 +255,7 @@ function initFiltros() {
 function carregarFiltrosUI() {
     const filtroCurso = document.getElementById('filtroCurso');
     if (filtroCurso && cursos.length) {
+        filtroCurso.innerHTML = '<option value="todos">Todas as Turmas</option>';
         cursos.forEach(c => {
             const option = document.createElement('option');
             option.value = c;
@@ -234,17 +265,12 @@ function carregarFiltrosUI() {
     }
 }
 
-/**
- * Retorna um Map com as datas completas e formatadas para cada dia da semana
- * baseado na data de referência (a semana que contém essa data).
- * @param {string} dataRef - Data no formato 'YYYY-MM-DD'
- * @returns {Map<string, {fullDate: string, displayDate: string}>}
- */
+// Funções auxiliares para datas da semana
 function obterDatasDaSemanaCompletas(dataRef) {
     const data = new Date(dataRef + 'T12:00:00');
     const diaSemana = data.getDay();
     let diffParaSegunda;
-    if (diaSemana === 0) diffParaSegunda = -6; // domingo -> segunda anterior
+    if (diaSemana === 0) diffParaSegunda = -6;
     else diffParaSegunda = -(diaSemana - 1);
 
     const segunda = new Date(data);
@@ -255,7 +281,7 @@ function obterDatasDaSemanaCompletas(dataRef) {
         const diaAtual = new Date(segunda);
         diaAtual.setDate(segunda.getDate() + i);
         const fullDate = diaAtual.toISOString().split('T')[0];
-        const displayDate = formatarData(fullDate).substring(0, 5); // dd/mm
+        const displayDate = formatarData(fullDate).substring(0, 5);
         datas.set(diasSemana[i], { fullDate, displayDate });
     }
     return datas;
@@ -266,12 +292,9 @@ function getStatusAula(curso, dia, periodo, aulaNum, aula, dataAula) {
         return { status: 'vazia', mensagem: 'Aula não preenchida' };
     }
 
-    // Buscar faltas registradas para a data específica
     const faltasNaData = faltasRegistradas.filter(r => r.data === dataAula);
     const chave = `${curso}|${periodo}|${aulaNum}`;
-    const registro = faltasNaData.find(r => 
-        `${r.curso}|${r.periodo}|${r.aulaNum}` === chave
-    );
+    const registro = faltasNaData.find(r => `${r.curso}|${r.periodo}|${r.aulaNum}` === chave);
 
     if (registro) {
         if (registro.substituto) {
@@ -290,7 +313,6 @@ function getStatusAula(curso, dia, periodo, aulaNum, aula, dataAula) {
         }
     }
 
-    // Conflito de horário (independente de data)
     const temConflito = verificarConflitosProfessor(curso, dia, periodo, aulaNum, aula.professor);
     if (temConflito) {
         return {
@@ -354,23 +376,51 @@ function renderizarGradeCompleta() {
         return;
     }
 
-    // Obter as datas de cada coluna (semana da dataReferencia)
     const datasPorDia = obterDatasDaSemanaCompletas(dataReferencia);
 
     let html = `<div class="table-responsive"><table class="table grade-table">`;
-    // Cabeçalho com datas
     const ths = diasSemana.map(dia => `<th>${dia}<br><small class="text-white">${datasPorDia.get(dia).displayDate}</small></th>`).join('');
-    html += `<thead><tr><th style="width: 100px">Horário</th>${ths} </thead><tbody>`;
+    html += `<thead><tr><th style="width: 100px">Horário</th>${ths}</tr></thead><tbody>`;
 
     for (const curso of cursosFiltrados) {
-        html += `<tr class="curso-separator"><td colspan="${diasSemana.length + 1}"><i class="bi bi-mortarboard"></i> ${curso} </tr>`;
+        const cursoId = `curso-${curso.replace(/\s/g, '-')}`;
+        // Cabeçalho clicável
+        html += `<tr class="curso-separator" data-curso="${cursoId}">
+                    <td colspan="${diasSemana.length + 1}">
+                        <div class="curso-toggle" data-curso-id="${cursoId}">
+                            <i class="bi bi-chevron-down toggle-icon"></i> 
+                            <i class="bi bi-mortarboard"></i> ${curso}
+                        </div>
+                    </td>
+                 </tr>`;
+        // Corpo da grade (colapsável)
+        html += `<tbody id="${cursoId}" class="curso-grade-body" style="display: none;">`;
         if (currentFiltroPeriodo === 'todos' || currentFiltroPeriodo === 'manha') html += renderizarPeriodo(curso, 'manha', datasPorDia);
         if (currentFiltroPeriodo === 'todos' || currentFiltroPeriodo === 'tarde') html += renderizarPeriodo(curso, 'tarde', datasPorDia);
         if (currentFiltroPeriodo === 'todos' || currentFiltroPeriodo === 'noite') html += renderizarPeriodo(curso, 'noite', datasPorDia);
+        html += `</tbody>`;
     }
-    html += `</tbody> </table></div>`;
+    html += `</tbody></table></div>`;
     container.innerHTML = html;
 
+    // Adicionar evento de toggle para cada curso
+    document.querySelectorAll('.curso-toggle').forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cursoId = toggle.dataset.cursoId;
+            const body = document.getElementById(cursoId);
+            if (body) {
+                const isVisible = body.style.display !== 'none';
+                body.style.display = isVisible ? 'none' : '';
+                const icon = toggle.querySelector('.toggle-icon');
+                if (icon) {
+                    icon.className = isVisible ? 'bi bi-chevron-right toggle-icon' : 'bi bi-chevron-down toggle-icon';
+                }
+            }
+        });
+    });
+
+    // Vincular evento de clique nas células (já existia)
     document.querySelectorAll('.schedule-cell').forEach(cell => {
         cell.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -406,13 +456,13 @@ function renderizarPeriodo(curso, periodo, datasPorDia) {
     let html = `<tr class="periodo-separator"><td colspan="${diasSemana.length + 1}">${icon} PERÍODO DA ${nome} </tr>`;
     for (const hor of horas) {
         if (hor.intervalo) {
-            html += `<tr class="intervalo-cell"><td>⏸️ INTERVALO<br><small>${hor.inicio} - ${hor.fim}</small></td>${diasSemana.map(() => '<td class="text-center">☕</td>').join('')}</tr>`;
+            html += `<tr class="intervalo-cell"><td>⏸️ INTERVALO<br><small>${hor.inicio} - ${hor.fim}</small></td>${diasSemana.map(() => '<td class="text-center">☕</td>').join('')} </tr>`;
         } else {
             const linhaCells = diasSemana.map(dia => {
                 const dataAula = datasPorDia.get(dia).fullDate;
                 return renderizarCelula(curso, dia, periodo, aulaNum, dataAula);
             });
-            html += `<tr><td class="fw-bold">${hor.inicio}<br><small>${hor.fim}</small></td>${linhaCells.join('')}</tr>`;
+            html += `<tr><td class="fw-bold">${hor.inicio}<br><small>${hor.fim}</small></td>${linhaCells.join('')} </tr>`;
             aulaNum++;
         }
     }
@@ -426,7 +476,7 @@ function renderizarCelula(curso, dia, periodo, aulaNum, dataAula) {
     if (vazia) {
         return `<td class="schedule-cell empty-cell" data-curso="${curso}" data-dia="${dia}" data-periodo="${periodo}" data-aula-num="${aulaNum}" data-data-aula="${dataAula}">
                     <div class="empty-cell">➕ Clique para preencher</div>
-                 </td>`;
+                </td>`;
     }
 
     const statusInfo = getStatusAula(curso, dia, periodo, aulaNum, aula, dataAula);
@@ -468,20 +518,14 @@ function renderizarCelula(curso, dia, periodo, aulaNum, dataAula) {
         ? `↻ ${statusInfo.professorSubstituto}`
         : aula.professor;
 
-    return `<td class="schedule-cell ${statusClass}"
-               data-curso="${curso}" data-dia="${dia}" data-periodo="${periodo}" data-aula-num="${aulaNum}"
-               data-data-aula="${dataAula}"
-               data-status="${statusInfo.status}"
-               style="${backgroundStyle} cursor: pointer;"
-               title="${escapeHtml(statusInfo.mensagem)}">
-            <div class="aula-disciplina"><i class="bi bi-book"></i> ${escapeHtml(aula.disciplina)}</div>
-            <div class="aula-professor"><i class="bi bi-person-badge"></i> ${escapeHtml(professorExibido)}</div>
-            ${statusLabel}
-         </td>`;
+    return `<td class="schedule-cell ${statusClass}" data-curso="${curso}" data-dia="${dia}" data-periodo="${periodo}" data-aula-num="${aulaNum}" data-data-aula="${dataAula}" data-status="${statusInfo.status}" style="${backgroundStyle} cursor: pointer;" title="${escapeHtml(statusInfo.mensagem)}">
+                <div class="aula-disciplina"><i class="bi bi-book"></i> ${escapeHtml(aula.disciplina)}</div>
+                <div class="aula-professor"><i class="bi bi-person-badge"></i> ${escapeHtml(professorExibido)}</div>
+                ${statusLabel}
+            </td>`;
 }
 
 function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
-    // Encontrar a célula clicada para obter a data da aula
     const cell = document.querySelector(`.schedule-cell[data-curso="${curso}"][data-dia="${dia}"][data-periodo="${periodo}"][data-aula-num="${aulaNum}"]`);
     const dataAula = cell ? cell.dataset.dataAula : dataReferencia;
 

@@ -4,9 +4,8 @@ let cursosList = [];
 let gradeData = {};
 let currentProfessor = null;
 
-// Calendar state
 let currentDate = new Date();
-let selectedDates = new Set();      // armazena strings 'YYYY-MM-DD'
+let selectedDates = new Set();
 let isSelecting = false;
 let startSelectDate = null;
 
@@ -33,6 +32,11 @@ const btnRegistrarFalta = document.getElementById('btnRegistrarFalta');
 const resultadoRegistro = document.getElementById('resultadoRegistro');
 const resumoHorarioContainer = document.getElementById('resumoHorarioContainer');
 
+// ======================== SUPABASE CLIENT ========================
+const SUPABASE_URL = 'https://akzpntnefqyocmqswqsp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrenBudG5lZnF5b2NtcXN3cXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTgxNTMsImV4cCI6MjA5MzIzNDE1M30.TdBmACGxvuvXpTQRmLOHt9cvxWppReIZa9XSq8sDzWk';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // ======================== HELPER: DATA LOCAL ========================
 function formatDateLocal(year, month, day) {
     const y = year;
@@ -56,46 +60,87 @@ function getDiaSemanaFromDateStr(dateStr) {
 async function init() {
     await loadProfessores();
     await loadCursos();
-    loadGradeData();
-    loadAbsenceRecords();
+    await loadGradeData();
+    await loadAbsenceRecords();
     attachEventListeners();
     renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
 }
 
+// Carregar professores do Supabase (com matricula e nome)
 async function loadProfessores() {
-    try {
-        const resp = await fetch('../data/professores.json');
-        const data = await resp.json();
-        professoresList = data.professores;
-    } catch (err) {
-        console.error('Erro ao carregar professores:', err);
-        professoresList = [];
-    }
+    const { data, error } = await supabaseClient
+        .from('professores')
+        .select('matricula, nome')
+        .order('nome');
+    if (error) throw error;
+    professoresList = data;
 }
 
+// Carregar cursos do Supabase
 async function loadCursos() {
-    try {
-        const resp = await fetch('../data/cursos.json');
-        const data = await resp.json();
-        cursosList = data.cursos || [];
-    } catch (err) {
-        console.error('Erro ao carregar cursos:', err);
-        cursosList = [];
+    const { data, error } = await supabaseClient
+        .from('cursos')
+        .select('nome')
+        .order('nome');
+    if (error) throw error;
+    cursosList = data.map(c => c.nome);
+}
+
+// Carregar grade horária (tabela grade_horaria)
+async function loadGradeData() {
+    const { data, error } = await supabaseClient
+        .from('grade_horaria')
+        .select('*');
+    if (error) throw error;
+
+    gradeData = {};
+    for (const item of data) {
+        const { curso, dia_semana, periodo, aula_num, disciplina, professor, horario } = item;
+        if (!gradeData[curso]) gradeData[curso] = {};
+        if (!gradeData[curso][dia_semana]) gradeData[curso][dia_semana] = { manha: {}, tarde: {}, noite: {} };
+        if (!gradeData[curso][dia_semana][periodo]) gradeData[curso][dia_semana][periodo] = {};
+        gradeData[curso][dia_semana][periodo][aula_num] = { disciplina, professor, horario };
     }
 }
 
-function loadGradeData() {
-    const saved = localStorage.getItem('gradeHoraria');
-    gradeData = saved ? JSON.parse(saved) : {};
+// Carregar faltas registradas do Supabase (para o professor atual, se houver)
+async function loadAbsenceRecords() {
+    if (!currentProfessor) {
+        absenceRecords = [];
+        return;
+    }
+    const { data, error } = await supabaseClient
+        .from('faltas')
+        .select('*')
+        .eq('matricula_professor', currentProfessor.matricula);
+    if (error) throw error;
+    absenceRecords = data.map(r => ({
+        matriculaProfessor: r.matricula_professor,
+        data: r.data,
+        curso: r.curso,
+        periodo: r.periodo,
+        aulaNum: r.aula_num,
+        substituto: r.substituto || ''
+    }));
 }
 
-function loadAbsenceRecords() {
-    const saved = localStorage.getItem('faltasRegistradas');
-    absenceRecords = saved ? JSON.parse(saved) : [];
-}
-
-function saveAbsenceRecords() {
-    localStorage.setItem('faltasRegistradas', JSON.stringify(absenceRecords));
+// Salvar faltas (upsert) - usado quando o usuário altera o substituto
+async function saveAbsenceRecords() {
+    if (!currentProfessor) return;
+    // Para cada registro, faz upsert na tabela faltas
+    for (const record of absenceRecords) {
+        const { error } = await supabaseClient
+            .from('faltas')
+            .upsert({
+                matricula_professor: record.matriculaProfessor,
+                data: record.data,
+                curso: record.curso,
+                periodo: record.periodo,
+                aula_num: record.aulaNum,
+                substituto: record.substituto || null
+            }, { onConflict: 'matricula_professor, data, curso, periodo, aula_num' });
+        if (error) console.error('Erro ao salvar falta:', error);
+    }
 }
 
 function attachEventListeners() {
@@ -107,7 +152,7 @@ function attachEventListeners() {
     btnRegistrarFalta.addEventListener('click', registrarFaltas);
 }
 
-// ======================== STEP 1: VERIFICAR MATRÍCULA ========================
+// ======================== VERIFICAR MATRÍCULA ========================
 function verificarProfessor() {
     const matriculaDigitada = matriculaInput.value.trim();
     if (!matriculaDigitada) {
@@ -127,7 +172,9 @@ function verificarProfessor() {
         renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
         aulasContainer.style.display = 'none';
         resultadoRegistro.style.display = 'none';
-        btnRegistrarFalta.disabled = true; // desabilita até carregar aulas
+        btnRegistrarFalta.disabled = true;
+        // Carregar faltas já existentes desse professor
+        loadAbsenceRecords().then(() => {});
     } else {
         showFeedback('Matrícula não encontrada. Verifique o número.', 'danger');
     }
@@ -153,7 +200,7 @@ function resetarMatricula() {
     resultadoRegistro.style.display = 'none';
 }
 
-// ======================== CALENDÁRIO COM DRAG ========================
+// ======================== CALENDÁRIO ========================
 function changeMonth(delta) {
     currentDate.setMonth(currentDate.getMonth() + delta);
     renderCalendar(currentDate.getFullYear(), currentDate.getMonth());
@@ -290,7 +337,7 @@ function updateSelectedCount() {
 }
 
 // ======================== CARREGAR AULAS ========================
-function carregarAulasParaDatasSelecionadas() {
+async function carregarAulasParaDatasSelecionadas() {
     if (!currentProfessor) return;
     if (selectedDates.size === 0) {
         alert('Selecione pelo menos uma data no calendário.');
@@ -298,73 +345,68 @@ function carregarAulasParaDatasSelecionadas() {
     }
 
     const selectedDatesArray = Array.from(selectedDates).sort();
-    const aulasPromises = selectedDatesArray.map(date => buscarAulasDoProfessorNaData(currentProfessor.nome, date));
-    Promise.all(aulasPromises).then(results => {
-        loadedClasses = results.flat();
-        
-        // Remover registros antigos do professor atual
-        absenceRecords = absenceRecords.filter(r => r.matriculaProfessor !== currentProfessor.matricula);
-        
-        // Criar um registro para cada aula (substituto vazio = ausente)
-        for (const aula of loadedClasses) {
-            const novoRegistro = {
-                matriculaProfessor: currentProfessor.matricula,
-                data: aula.data,
-                curso: aula.curso,
-                periodo: aula.periodo,
-                aulaNum: aula.aulaNum,
-                substituto: ""   // vazio = ausente
-            };
-            absenceRecords.push(novoRegistro);
-        }
-        saveAbsenceRecords();
-        
-        exibirListaAulas(loadedClasses);
-        aulasContainer.style.display = 'block';
-        resultadoRegistro.style.display = 'none';
-        
-        // Habilitar botão de registrar apenas se houver aulas
-        btnRegistrarFalta.disabled = (loadedClasses.length === 0);
-        if (loadedClasses.length === 0) {
-            alert('Nenhuma aula encontrada para este professor nos dias selecionados.');
-        }
-    }).catch(err => {
-        console.error(err);
-        alert('Erro ao carregar as aulas. Tente novamente.');
-    });
-}
+    let aulasEncontradas = [];
 
-function buscarAulasDoProfessorNaData(nomeProfessor, dataStr) {
-    return new Promise((resolve) => {
-        const aulasEncontradas = [];
-        const nomeDiaSemana = getDiaSemanaFromDateStr(dataStr);
-
+    for (const data of selectedDatesArray) {
+        const diaSemana = getDiaSemanaFromDateStr(data);
         for (const curso in gradeData) {
             for (const dia in gradeData[curso]) {
-                if (dia !== nomeDiaSemana) continue;
-
+                if (dia !== diaSemana) continue;
                 for (const periodo of ['manha', 'tarde', 'noite']) {
                     const aulas = gradeData[curso]?.[dia]?.[periodo];
                     if (!aulas) continue;
                     for (const [num, aula] of Object.entries(aulas)) {
-                        if (aula && aula.professor === nomeProfessor && aula.disciplina) {
+                        if (aula && aula.professor === currentProfessor.nome && aula.disciplina) {
+                            const aulaNum = parseInt(num);
+                            const substituto = obterSubstitutoRegistrado(currentProfessor.matricula, data, curso, periodo, aulaNum);
                             aulasEncontradas.push({
                                 curso,
                                 diaSemana: dia,
                                 periodo,
-                                aulaNum: parseInt(num),
+                                aulaNum,
                                 disciplina: aula.disciplina,
                                 horario: aula.horario,
-                                data: dataStr,
-                                substituto: obterSubstitutoRegistrado(currentProfessor.matricula, dataStr, curso, periodo, parseInt(num))
+                                data: data,
+                                substituto
                             });
                         }
                     }
                 }
             }
         }
-        resolve(aulasEncontradas);
-    });
+    }
+
+    loadedClasses = aulasEncontradas;
+
+    // Atualizar absenceRecords: garantir que exista um registro para cada aula
+    for (const aula of loadedClasses) {
+        const exists = absenceRecords.some(r =>
+            r.matriculaProfessor === currentProfessor.matricula &&
+            r.data === aula.data &&
+            r.curso === aula.curso &&
+            r.periodo === aula.periodo &&
+            r.aulaNum === aula.aulaNum
+        );
+        if (!exists) {
+            absenceRecords.push({
+                matriculaProfessor: currentProfessor.matricula,
+                data: aula.data,
+                curso: aula.curso,
+                periodo: aula.periodo,
+                aulaNum: aula.aulaNum,
+                substituto: ""
+            });
+        }
+    }
+    await saveAbsenceRecords();
+
+    exibirListaAulas(loadedClasses);
+    aulasContainer.style.display = 'block';
+    resultadoRegistro.style.display = 'none';
+    btnRegistrarFalta.disabled = (loadedClasses.length === 0);
+    if (loadedClasses.length === 0) {
+        alert('Nenhuma aula encontrada para este professor nos dias selecionados.');
+    }
 }
 
 function obterSubstitutoRegistrado(matriculaProfessor, data, curso, periodo, aulaNum) {
@@ -404,7 +446,12 @@ function exibirListaAulas(aulas) {
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Professor substituto</label>
-                            <select class="form-select substituto-select" data-matricula="${currentProfessor.matricula}" data-data="${aula.data}" data-curso="${aula.curso}" data-periodo="${aula.periodo}" data-aulanum="${aula.aulaNum}">
+                            <select class="form-select substituto-select" 
+                                data-matricula="${currentProfessor.matricula}"
+                                data-data="${aula.data}"
+                                data-curso="${aula.curso}"
+                                data-periodo="${aula.periodo}"
+                                data-aulanum="${aula.aulaNum}">
                                 <option value="">Ausente (sem substituto)</option>
                                 ${professoresList.filter(p => p.matricula !== currentProfessor.matricula).map(p => `<option value="${p.nome}" ${aula.substituto === p.nome ? 'selected' : ''}>${p.nome}</option>`).join('')}
                             </select>
@@ -417,13 +464,14 @@ function exibirListaAulas(aulas) {
     listaAulasDinamica.innerHTML = html;
 
     document.querySelectorAll('.substituto-select').forEach(select => {
-        select.addEventListener('change', (e) => {
+        select.addEventListener('change', async (e) => {
             const matricula = select.dataset.matricula;
             const data = select.dataset.data;
             const curso = select.dataset.curso;
             const periodo = select.dataset.periodo;
             const aulaNum = parseInt(select.dataset.aulanum);
             const substituto = select.value;
+
             const index = absenceRecords.findIndex(r =>
                 r.matriculaProfessor === matricula &&
                 r.data === data &&
@@ -433,7 +481,7 @@ function exibirListaAulas(aulas) {
             );
             if (index !== -1) {
                 absenceRecords[index].substituto = substituto;
-            } else if (substituto) {
+            } else {
                 absenceRecords.push({
                     matriculaProfessor: matricula,
                     data,
@@ -443,21 +491,23 @@ function exibirListaAulas(aulas) {
                     substituto
                 });
             }
-            saveAbsenceRecords();
+            await saveAbsenceRecords();
         });
     });
 }
 
-function registrarFaltas() {
-    // Não há mais verificação obrigatória de substituto
-    exibirResumoHorario();
+async function registrarFaltas() {
+    await saveAbsenceRecords(); // garante persistência final
+    await exibirResumoHorario(); // recarrega o resumo baseado nos registros mais recentes
     resultadoRegistro.style.display = 'block';
     aulasContainer.style.display = 'none';
-    // Opcional: role para o resumo
     resultadoRegistro.scrollIntoView({ behavior: 'smooth' });
 }
 
-function exibirResumoHorario() {
+async function exibirResumoHorario() {
+    if (!currentProfessor) return;
+    // Recarregar registros atualizados
+    await loadAbsenceRecords();
     const registrosDoProfessor = absenceRecords.filter(r => r.matriculaProfessor === currentProfessor.matricula);
     if (registrosDoProfessor.length === 0) {
         resumoHorarioContainer.innerHTML = '<div class="p-3">Nenhum registro de falta encontrado.</div>';
@@ -474,14 +524,14 @@ function exibirResumoHorario() {
         } catch(e) { disciplina = 'N/A'; }
         const substitutoExibido = reg.substituto ? reg.substituto : 'Ausente';
         html += `<tr>
-                    <td>${reg.data}</td>
-                    <td>${reg.curso}</td>
-                    <td>${reg.periodo}</td>
-                    <td>${reg.aulaNum}</td>
-                    <td>${disciplina}</td>
-                    <td>${currentProfessor.nome}</td>
-                    <td>${substitutoExibido}</td>
-                 </tr>`;
+                     <td>${reg.data}</td>
+                     <td>${reg.curso}</td>
+                     <td>${reg.periodo}</td>
+                     <td>${reg.aulaNum}</td>
+                     <td>${disciplina}</td>
+                     <td>${currentProfessor.nome}</td>
+                     <td>${substitutoExibido}</td>
+                  </tr>`;
     }
     html += '</tbody></table></div>';
     resumoHorarioContainer.innerHTML = html;

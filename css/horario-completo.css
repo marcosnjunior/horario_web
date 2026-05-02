@@ -385,3 +385,27 @@ html {
         gap: 0.5rem;
     }
 }
+
+/* Curso colapsável */
+.curso-toggle {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    color: #0d6efd;
+    user-select: none;
+}
+
+.curso-toggle:hover {
+    opacity: 0.8;
+}
+
+.curso-toggle .toggle-icon {
+    font-size: 1.2rem;
+    transition: transform 0.2s;
+}
+
+.curso-grade-body {
+    transition: display 0.2s;
+}
