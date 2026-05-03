@@ -36,6 +36,7 @@ async function init() {
     } finally {
         mostrarLoading(false);
     }
+    
 }
 
 function mostrarLoading(show) {

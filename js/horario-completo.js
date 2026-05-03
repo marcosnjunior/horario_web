@@ -611,7 +611,7 @@ function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
         <div class="detalhe-info"><span class="detalhe-label"><i class="bi bi-book"></i> Disciplina:</span><span>${escapeHtml(aula?.disciplina || 'Não definida')}</span></div>
         <div class="detalhe-info"><span class="detalhe-label"><i class="bi bi-person-badge"></i> Professor:</span><span>${escapeHtml(aula?.professor || 'Não definido')}</span></div>
         <div class="detalhe-info"><span class="detalhe-label"><i class="bi bi-info-circle"></i> Status:</span><span><span class="badge" style="background-color:${statusColor}">${statusIcon} ${statusText}</span></span></div>
-        <div class="detalhe-info"><span class="detalhe-label"><i class="bi bi-chat-text"></i> Detalhes:</span><span>${statusInfo.mensagem || 'Nenhuma informação adicional'}</span></div>
+        <div hidden class="detalhe-info"><span class="detalhe-label"><i class="bi bi-chat-text"></i> Detalhes:</span><span>${statusInfo.mensagem || 'Nenhuma informação adicional'}</span></div>
     `;
 
     // Botão "Registrar Falta" (para aulas normais)
