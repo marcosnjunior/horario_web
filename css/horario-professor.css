@@ -1,0 +1,150 @@
+/* horario-professor.css - Estilos da grade individual do professor */
+
+:root {
+    --primary-bg: #0d6efd;
+    --table-header-bg: #1e2a3a;
+    --interval-bg: #f8f9fa;
+    --cell-hover: rgba(13, 110, 253, 0.05);
+    --border-color: #dee2e6;
+}
+
+body {
+    background-color: #f4f7fc;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Grade principal com largura fixa e colunas proporcionais */
+.grade-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.grade-table th {
+    background: var(--table-header-bg);
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid #2c3e4e;
+    width: auto;
+}
+
+/* Primeira coluna (Horário) com largura fixa */
+.grade-table th:first-child,
+.grade-table td:first-child {
+    width: 110px;
+}
+
+/* As demais colunas (dias da semana) dividem o espaço restante igualmente */
+.grade-table th:not(:first-child),
+.grade-table td:not(:first-child) {
+    width: calc((100% - 110px) / 6);
+}
+
+.grade-table td {
+    border: 1px solid var(--border-color);
+    padding: 10px 6px;
+    vertical-align: top;
+    transition: all 0.2s;
+    background-color: white;
+    word-break: break-word;
+}
+
+.grade-table td:hover {
+    background-color: var(--cell-hover);
+    cursor: pointer;
+}
+
+/* Linha de intervalo */
+.intervalo-row {
+    background-color: var(--interval-bg);
+    color: #6c757d;
+    font-style: italic;
+}
+.intervalo-row td {
+    background-color: #fef9e6;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+/* Célula vazia – mesmo estilo para manter largura */
+.empty-cell {
+    background-color: #fafbfc;
+    color: #adb5bd;
+    text-align: center;
+    font-size: 0.7rem;
+}
+
+/* Conteúdo da célula */
+.aula-info {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+.aula-disciplina {
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.aula-turma {
+    font-size: 0.75rem;
+    color: #2c3e50;
+    background-color: #e9ecef;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 12px;
+}
+
+/* Legenda de cores */
+.legenda-wrapper {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 30px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+.legenda-cor-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+}
+.legenda-cor {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+/* Seletor de professores */
+#professorSelect {
+    max-width: 400px;
+    border-radius: 30px;
+    padding: 10px 18px;
+    font-weight: 500;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .grade-table {
+        font-size: 0.7rem;
+    }
+    .grade-table th, .grade-table td {
+        padding: 6px 3px;
+    }
+    .aula-disciplina {
+        font-size: 0.7rem;
+    }
+    .aula-turma {
+        font-size: 0.65rem;
+    }
+}
+
+/* Card header */
+.card-header {
+    background: linear-gradient(135deg, #0d6efd, #0a58ca);
+    border-bottom: none;
+}
