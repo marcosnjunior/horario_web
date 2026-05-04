@@ -562,7 +562,8 @@ async function exibirResumoHorario() {
 
 // Função que envia os dados para o Google Apps Script
 async function enviarEmailGoogleAppsScript(destinatario, professor, resumoHTML) {
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8OxMvrwslntoA8SBB9MdHkfYcMMCwf38VzRCyXxB6HS7LptOEjfmB4gI0eWgDscqJ/exec';
+    // URL do Google Apps Script do e-mail da coordenação de informática
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgGc3rqcl7HI9-tW0pQfmer3iLdTfs6fdvrn8bM_Wwhnx7qxhYMJkPfzxcgg2ZhxfHsA/exec';
   
     const dados = {
       para: destinatario,
