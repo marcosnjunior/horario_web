@@ -221,7 +221,7 @@ function exibirResumo(faltas) {
     const sorted = Array.from(faltasPorProfessor.entries()).sort((a,b) => b[1] - a[1]).slice(0, 3);
     if (sorted.length) {
         topProfessoresHtml = `<div class="mt-3">
-            <i class="bi bi-bar-chart-steps"></i> <strong>Professores com mais faltas:</strong><br>
+            <i class="bi bi-bar-chart-steps"></i> <strong>Professores com faltas:</strong><br>
             ${sorted.map(([nome, qtd]) => `📌 ${escapeHtml(nome)}: ${qtd} falta(s)`).join('<br>')}
         </div>`;
     }

@@ -505,10 +505,11 @@ async function registrarFaltas() {
   
     // --- Envio do e-mail ---
     const destinatario = 'marcosnjunior@gmail.com'; // Substitua pelo e-mail desejado
+    const cc = 'marcos.junior@ifpb.edu.br'; //cópias de emails
     const professor = currentProfessor.nome;
     const resumoHTML = resumoHorarioContainer.innerHTML; // já contém a tabela com as faltas
   
-    const emailEnviado = await enviarEmailGoogleAppsScript(destinatario, professor, resumoHTML);
+    const emailEnviado = await enviarEmailGoogleAppsScript(destinatario, cc, professor, resumoHTML);
     if (emailEnviado) {
       // Exibe uma mensagem opcional para o usuário
       const alertDiv = document.createElement('div');
@@ -561,12 +562,13 @@ async function exibirResumoHorario() {
 }
 
 // Função que envia os dados para o Google Apps Script
-async function enviarEmailGoogleAppsScript(destinatario, professor, resumoHTML) {
+async function enviarEmailGoogleAppsScript(destinatario, cc, professor, resumoHTML) {
     // URL do Google Apps Script do e-mail da coordenação de informática
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgGc3rqcl7HI9-tW0pQfmer3iLdTfs6fdvrn8bM_Wwhnx7qxhYMJkPfzxcgg2ZhxfHsA/exec';
   
     const dados = {
       para: destinatario,
+      cc: cc,
       professor: professor,
       resumoHTML: resumoHTML,
       dataReferencia: new Date().toLocaleDateString('pt-BR')
