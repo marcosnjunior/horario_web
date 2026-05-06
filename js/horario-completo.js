@@ -798,6 +798,11 @@ function obterHorarioInicio(periodo, aulaNum) {
     return 'Horário não definido';
 }
 
+function obterNomeProfessorPorMatricula(matricula) {
+    const professor = professores.find(p => p.matricula === matricula);
+    return professor ? professor.nome : null;
+}
+
 // Abre modal com a lista de aulas afetadas (ausências ou substituições)
 function abrirModalListaFaltas(tipo) {
     // tipo: 'ausencia' ou 'substituicao'
@@ -833,7 +838,7 @@ function abrirModalListaFaltas(tipo) {
         const diaSemana = getDiaSemanaFromDate(dataReferencia);
         const aula = gradeData[falta.curso]?.[diaSemana]?.[falta.periodo]?.[falta.aulaNum];
         const disciplina = aula?.disciplina || 'Disciplina não encontrada';
-        const professorTitular = falta.matriculaProfessor;
+        const professorTitular = obterNomeProfessorPorMatricula(falta.matriculaProfessor) || falta.matriculaProfessor; // Nome ou matrícula
         const professorSubstituto = falta.substituto || '---';
         const horarioInicio = obterHorarioInicio(falta.periodo, falta.aulaNum);
         const periodoLabel = falta.periodo === 'manha' ? 'Manhã' : (falta.periodo === 'tarde' ? 'Tarde' : 'Noite');
