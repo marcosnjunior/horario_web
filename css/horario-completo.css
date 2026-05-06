@@ -459,3 +459,72 @@ html {
         padding: 12px 0; /* área de toque maior */
     }
 }
+
+#alertasFaltasContainer {
+    font-size: 0.9rem;
+    border-left-width: 4px !important;
+    padding: 0.75rem 1rem;
+}
+
+#listaFaltas {
+    max-height: 180px;
+    overflow-y: auto;
+}
+.lista-falta-item {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0.5rem 0;
+}
+.lista-falta-item:last-child {
+    border-bottom: none;
+}
+
+/* Estilos para os botões de alerta */
+#alertasFaltasContainer .btn-sm {
+    border-radius: 30px;
+    padding: 0.25rem 1rem;
+    font-weight: 500;
+}
+
+#alertasFaltasContainer .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+#alertasFaltasContainer .btn-warning {
+    background-color: #fd7e14;
+    border-color: #fd7e14;
+    color: white;
+}
+
+#alertasFaltasContainer .btn-warning:hover {
+    background-color: #e65c00;
+}
+
+/* Estilo do modal de lista de faltas */
+#modalListaHeader {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+}
+
+#modalListaHeader .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+#listaAulasAfetadas .list-group-item {
+    border-left: 4px solid;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+}
+
+#modalListaFaltas .list-group-item:first-child,
+#modalListaFaltas .list-group-item:last-child {
+    border-radius: 8px;
+}
+
+#alertasFaltasContainer .d-flex {
+    margin-bottom: 0;
+}
+#alertasFaltasContainer .btn-sm {
+    border-radius: 30px;
+    padding: 0.25rem 1rem;
+}

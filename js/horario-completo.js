@@ -1,5 +1,5 @@
 // horario-completo.js - Visualização de horários com data selecionada e destaque de faltas
-// Agora com edição de substituição no modal
+// Agora com edição de substituição no modal e lista de alertas por data (botões condicionais)
 
 // Variáveis globais
 let gradeData = {};
@@ -15,6 +15,8 @@ let currentFiltroCurso = 'todos';
 let currentFiltroPeriodo = 'todos';
 let currentFiltroStatus = 'todos';
 let dataReferencia = new Date().toISOString().split('T')[0];
+let realtimeChannel = null;            // canal do realtime
+let realtimeChannelGrade = null;       // canal para grade_horaria
 
 const diasSemana = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 const periodos = ['manha', 'tarde', 'noite'];
@@ -34,13 +36,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         carregarFiltrosUI();
         atualizarDataNoTitulo();
         renderizarGradeCompleta();
+        renderizarAlertasFaltas();
         mostrarLoading(false);
+        setupRealtimeSubscription();
     } catch (error) {
         console.error('Erro fatal na inicialização:', error);
         mostrarErroFatal(error.message || 'Falha ao carregar dados essenciais do Supabase.', error);
         mostrarLoading(false);
     }
 });
+
+// ==================== REAL TIME ====================
+function setupRealtimeSubscription() {
+    // Cancela inscrições anteriores se existirem
+    if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+    }
+    if (realtimeChannelGrade) {
+        supabaseClient.removeChannel(realtimeChannelGrade);
+    }
+
+    // Canal para escutar mudanças na tabela 'faltas'
+    realtimeChannel = supabaseClient
+        .channel('faltas-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'faltas' }, async (payload) => {
+            console.log('Mudança detectada em faltas:', payload);
+            await carregarFaltasRegistradas();
+            renderizarGradeCompleta();   // atualiza a tabela principal
+            renderizarAlertasFaltas();
+            mostrarToast('Dados de faltas atualizados automaticamente!', 'info');
+        })
+        .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') console.log('✅ Conectado ao Realtime da tabela faltas');
+            else if (status === 'CHANNEL_ERROR') console.error('❌ Erro no canal faltas:', err);
+        });
+
+    // Canal para escutar mudanças na tabela 'grade_horaria'
+    realtimeChannelGrade = supabaseClient
+        .channel('grade-horaria-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'grade_horaria' }, async (payload) => {
+            console.log('Mudança detectada em grade_horaria:', payload);
+            // Recarrega a grade e dados dependentes
+            await carregarGradeHoraria();
+            // Se houver alteração em disciplinas (nome/cor), recarregue também
+            await carregarDisciplinas(); // opcional, garante cores atualizadas
+            renderizarGradeCompleta();
+            renderizarAlertasFaltas();   // pois a lista de faltas pode referenciar disciplinas
+            mostrarToast('Horário da grade atualizado automaticamente!', 'info');
+        })
+        .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') console.log('✅ Conectado ao Realtime da tabela grade_horaria');
+            else if (status === 'CHANNEL_ERROR') console.error('❌ Erro no canal grade_horaria:', err);
+        });
+}
 
 function mostrarErroFatal(mensagem, erro) {
     const container = document.getElementById('gradeContainer');
@@ -180,6 +228,7 @@ async function carregarFaltasRegistradas() {
             substituto: f.substituto || ''
         }));
     }
+    renderizarAlertasFaltas();
 }
 
 function atualizarDataNoTitulo() {
@@ -232,6 +281,7 @@ function initFiltros() {
             dataReferencia = e.target.value;
             atualizarDataNoTitulo();
             renderizarGradeCompleta();
+            renderizarAlertasFaltas();
             mostrarToast(`Data alterada para ${formatarData(dataReferencia)}`, 'info');
         });
     }
@@ -239,7 +289,7 @@ function initFiltros() {
         btnAtualizar.addEventListener('click', async () => {
             mostrarLoading(true);
             try {
-                await carregarFaltasRegistradas();
+                await carregarFaltasRegistradas(); // já chama renderizarAlertasFaltas
                 atualizarDataNoTitulo();
                 renderizarGradeCompleta();
             } catch (err) {
@@ -382,7 +432,7 @@ function renderizarGradeCompleta() {
 
     let html = `<div class="table-responsive"><table class="table grade-table">`;
     const ths = diasSemana.map(dia => `<th>${dia}<br><small class="text-white">${datasPorDia.get(dia).displayDate}</small></th>`).join('');
-    html += `<thead><tr><th style="width: 100px">Horário</th>${ths} </tr></thead><tbody>`;
+    html += `<thead><tr><th style="width: 100px">Horário</th>${ths} </td></thead><tbody>`;
 
     for (const curso of cursosFiltrados) {
         const cursoId = `curso-${curso.replace(/\s/g, '-')}`;
@@ -392,8 +442,8 @@ function renderizarGradeCompleta() {
                             <i class="bi bi-chevron-down toggle-icon"></i> 
                             <i class="bi bi-mortarboard"></i> ${curso}
                         </div>
-                    </td>
-                  </tr>`;
+                      </td>
+                    </tr>`;
         html += `<tr class="curso-grade-row" data-curso-id="${cursoId}">
                     <td colspan="${diasSemana.length + 1}" style="padding: 0;">
                         <div class="curso-grade-content" id="${cursoId}">
@@ -401,12 +451,12 @@ function renderizarGradeCompleta() {
                                 ${renderizarPeriodo(curso, 'manha', datasPorDia)}
                                 ${renderizarPeriodo(curso, 'tarde', datasPorDia)}
                                 ${renderizarPeriodo(curso, 'noite', datasPorDia)}
-                            </table>
+                             </table>
                         </div>
-                    </td>
-                  </tr>`;
+                     </td>
+                    </tr>`;
     }
-    html += `</tbody></td></div>`;
+    html += `</tbody></table></div>`;
     container.innerHTML = html;
 
     // Adicionar evento para toggle
@@ -483,7 +533,7 @@ function renderizarCelula(curso, dia, periodo, aulaNum, dataAula) {
     if (vazia) {
         return `<td class="schedule-cell empty-cell" data-curso="${curso}" data-dia="${dia}" data-periodo="${periodo}" data-aula-num="${aulaNum}" data-data-aula="${dataAula}">
                     <div class="empty-cell">➕ Clique para preencher</div>
-                  </td>`;
+                 </td>`;
     }
 
     const statusInfo = getStatusAula(curso, dia, periodo, aulaNum, aula, dataAula);
@@ -525,7 +575,7 @@ function renderizarCelula(curso, dia, periodo, aulaNum, dataAula) {
                 <div class="aula-disciplina"><i class="bi bi-book"></i> ${escapeHtml(aula.disciplina)}</div>
                 <div class="aula-professor"><i class="bi bi-person-badge"></i> ${escapeHtml(professorExibido)}</div>
                 ${statusLabel}
-              </td>`;
+             </td>`;
 }
 
 // ==================== FUNÇÕES DE MANIPULAÇÃO DE FALTAS ====================
@@ -687,16 +737,12 @@ function abrirModalDetalhes(curso, dia, periodo, aulaNum) {
                 novoSubstituto
             );
             if (success) {
-                // Atualiza o modal com as novas informações (opcional: recarregar o modal)
-                modal.hide();
-                // Reabrir com dados atualizados (opcional)
-                setTimeout(() => abrirModalDetalhes(curso, dia, periodo, aulaNum), 300);
+                modal.hide();  // apenas fecha o modal, sem reabrir
             }
         });
-        // Inserir antes do botão Cancelar (ou no final do footer)
         modalFooter.insertBefore(saveSubBtn, cancelBtn);
     } else {
-        // Se não há falta, garantir que o botão Registrar Falta esteja visível (já está)
+        // Se não há falta, garantir que o botão Registrar Falta esteja visível
         if (btnRegistrar) btnRegistrar.style.display = 'inline-block';
     }
 
@@ -721,4 +767,151 @@ function exportarPDF() {
     html2pdf().set(opt).from(element).save()
         .then(() => mostrarToast('PDF gerado com sucesso!', 'success'))
         .catch(err => { console.error(err); mostrarToast('Erro ao gerar PDF', 'error'); });
+}
+
+// ==================== FUNÇÕES PARA LISTA DE ALERTAS COM BOTÕES ====================
+
+// Converte uma data (YYYY-MM-DD) no nome do dia da semana (Segunda a Sábado)
+function getDiaSemanaFromDate(dateStr) {
+    const date = new Date(dateStr + 'T12:00:00');
+    const dia = date.getDay(); // 0=domingo,1=segunda...
+    if (dia === 0) return null;
+    return diasSemana[dia - 1];
+}
+
+// Obtém o horário de início de uma aula com base no período e número da aula
+function obterHorarioInicio(periodo, aulaNum) {
+    let horarios = [];
+    if (periodo === 'manha') horarios = horariosManha;
+    else if (periodo === 'tarde') horarios = horariosTarde;
+    else if (periodo === 'noite') horarios = horariosNoite;
+    else return 'Horário não definido';
+
+    let aulaIdx = 1;
+    for (const item of horarios) {
+        if (item.intervalo) continue;
+        if (aulaIdx === aulaNum) {
+            return item.inicio;
+        }
+        aulaIdx++;
+    }
+    return 'Horário não definido';
+}
+
+// Abre modal com a lista de aulas afetadas (ausências ou substituições)
+function abrirModalListaFaltas(tipo) {
+    // tipo: 'ausencia' ou 'substituicao'
+    const faltasNoDia = faltasRegistradas.filter(f => f.data === dataReferencia);
+    let faltasFiltradas;
+    if (tipo === 'ausencia') {
+        faltasFiltradas = faltasNoDia.filter(f => !f.substituto); // sem substituto
+    } else {
+        faltasFiltradas = faltasNoDia.filter(f => f.substituto); // com substituto
+    }
+
+    if (faltasFiltradas.length === 0) return;
+
+    const modal = new bootstrap.Modal(document.getElementById('modalListaFaltas'));
+    const modalTitulo = document.getElementById('modalListaTitulo');
+    const listaContainer = document.getElementById('listaAulasAfetadas');
+    const modalHeader = document.getElementById('modalListaHeader');
+
+    // Configurar título e cor do cabeçalho
+    if (tipo === 'ausencia') {
+        modalTitulo.innerHTML = '<i class="bi bi-exclamation-octagon-fill"></i> Aulas com Ausência de Professor';
+        modalHeader.style.background = 'linear-gradient(135deg, #dc3545, #b02a37)';
+        modalHeader.style.color = 'white';
+    } else {
+        modalTitulo.innerHTML = '<i class="bi bi-arrow-repeat"></i> Aulas com Substituição';
+        modalHeader.style.background = 'linear-gradient(135deg, #fd7e14, #e65c00)';
+        modalHeader.style.color = 'white';
+    }
+
+    // Construir lista de itens
+    let listaHtml = '';
+    for (const falta of faltasFiltradas) {
+        const diaSemana = getDiaSemanaFromDate(dataReferencia);
+        const aula = gradeData[falta.curso]?.[diaSemana]?.[falta.periodo]?.[falta.aulaNum];
+        const disciplina = aula?.disciplina || 'Disciplina não encontrada';
+        const professorTitular = falta.matriculaProfessor;
+        const professorSubstituto = falta.substituto || '---';
+        const horarioInicio = obterHorarioInicio(falta.periodo, falta.aulaNum);
+        const periodoLabel = falta.periodo === 'manha' ? 'Manhã' : (falta.periodo === 'tarde' ? 'Tarde' : 'Noite');
+
+        listaHtml += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1"><i class="bi bi-building"></i> ${escapeHtml(falta.curso)}</h6>
+                    <small class="text-muted">Aula ${falta.aulaNum} - ${horarioInicio}</small>
+                </div>
+                <p class="mb-1"><strong>Disciplina:</strong> ${escapeHtml(disciplina)}</p>
+                <p class="mb-1"><strong>Professor titular:</strong> ${escapeHtml(professorTitular)}</p>
+                ${tipo === 'substituicao' ? `<p class="mb-1"><strong>Substituto:</strong> ${escapeHtml(professorSubstituto)}</p>` : ''}
+                <small class="text-muted"><i class="bi bi-clock"></i> Período: ${periodoLabel}</small>
+            </div>
+        `;
+    }
+
+    listaContainer.innerHTML = listaHtml;
+    modal.show();
+}
+
+function renderizarAlertasFaltas() {
+    const container = document.getElementById('alertasFaltasContainer');
+    const listaDiv = document.getElementById('listaFaltas');
+    if (!container || !listaDiv) return;
+
+    const faltasNoDia = faltasRegistradas.filter(f => f.data === dataReferencia);
+    const temAusencia = faltasNoDia.some(f => !f.substituto);
+    const temSubstituicao = faltasNoDia.some(f => f.substituto);
+
+    if (faltasNoDia.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const diaSemana = getDiaSemanaFromDate(dataReferencia);
+    if (!diaSemana) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    // Alinhar à direita: usar d-flex justify-content-end e order
+    let html = '<div class="d-flex justify-content-end align-items-center flex-wrap gap-2">';
+
+    if (temAusencia) {
+        const qtdAusencias = faltasNoDia.filter(f => !f.substituto).length;
+        html += `
+            <button class="btn btn-danger btn-sm" id="btnVerAusencias">
+                <i class="bi bi-person-slash"></i> ${qtdAusencias} Ausência${qtdAusencias > 1 ? 's' : ''}
+            </button>
+        `;
+    }
+
+    if (temSubstituicao) {
+        const qtdSubst = faltasNoDia.filter(f => f.substituto).length;
+        html += `
+            <button class="btn btn-warning btn-sm" id="btnVerSubstituicoes">
+                <i class="bi bi-arrow-repeat"></i> ${qtdSubst} Substituição${qtdSubst > 1 ? 'ões' : ''}
+            </button>
+        `;
+    }
+
+    // Texto "Atenção:" agora aparece depois dos botões (à direita também, mas se quiser invertido, basta mudar a ordem)
+    // Para manter o texto à direita junto com botões, incluímos antes do fechamento:
+    html += `<strong></strong>`;
+    html += '</div>';
+
+    listaDiv.innerHTML = html;
+
+    const btnAusencias = document.getElementById('btnVerAusencias');
+    if (btnAusencias) {
+        btnAusencias.addEventListener('click', () => abrirModalListaFaltas('ausencia'));
+    }
+    const btnSubst = document.getElementById('btnVerSubstituicoes');
+    if (btnSubst) {
+        btnSubst.addEventListener('click', () => abrirModalListaFaltas('substituicao'));
+    }
 }
